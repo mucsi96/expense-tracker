@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -19,6 +20,8 @@ class UploadServiceTest {
       sep=;
       Account number;Card number;Account/Cardholder;Purchase date;Booking text;Sector;Amount;Original currency;Rate;Currency;Debit;Credit;Booked
       3842 7186 6400;4901 18XX XXXX 5896;EVA BARI;15.07.2026;TWINT * Zürcher Verkehrsverbund - APP Zürich CHE;Commuter transportation;7.2;CHF;;CHF;;;
+      3842 7186 6400;;;;Total per currency;;;;;CHF;7.2;;
+      3842 7186 6400;;;;Total card bookings;;;;;CHF;7.2;;
       """;
 
   static final String ACCOUNT_CSV = """
@@ -44,6 +47,16 @@ class UploadServiceTest {
     assertEquals(1, expenses.size());
     assertEquals("7.2", expenses.get(0).getAmount().toString());
     assertEquals("Expense", expenses.get(0).getType());
+  }
+
+  @Test
+  void skipsSummaryRows() {
+    MockMultipartFile file = new MockMultipartFile("file", "card.csv", "text/csv",
+        CARD_CSV.getBytes(StandardCharsets.ISO_8859_1));
+    var descriptions = uploadService.parseExpenses(file, CSVType.CARD_STATEMENT).stream()
+        .map(expense -> expense.getDescription())
+        .toList();
+    assertEquals(List.of("TWINT * Zürcher Verkehrsverbund - APP Zürich CHE"), descriptions);
   }
 
   @Test

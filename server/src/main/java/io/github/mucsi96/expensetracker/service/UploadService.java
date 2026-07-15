@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.apache.commons.csv.CSVFormat;
@@ -26,6 +27,9 @@ import io.github.mucsi96.expensetracker.enums.CSVType;
 public class UploadService {
   private static final CSVFormat CSV_FORMAT = CSVFormat.EXCEL.builder().setDelimiter(";").build();
 
+  // Summary rows in bank exports, not actual transactions
+  private static final Set<String> IGNORED_DESCRIPTIONS = Set.of("Total per currency", "Total card bookings");
+
   public Optional<CSVType> detectCSVType(MultipartFile file) {
     List<String> lines = withRecords(file, StandardCharsets.UTF_8, records -> records.stream()
         .map(record -> String.join(";", record.values()))
@@ -37,7 +41,7 @@ public class UploadService {
   }
 
   public List<Expense> parseExpenses(MultipartFile file, CSVType type) {
-    return switch (type) {
+    List<Expense> expenses = switch (type) {
       case ACCOUNT_STATEMENT -> withRecords(file, StandardCharsets.UTF_8, records -> records.stream()
           .map(AccountStatementConverter::fromCSVRecord)
           .flatMap(Optional::stream)
@@ -49,6 +53,10 @@ public class UploadService {
           .map(CardStatementConverter::toExpense)
           .toList());
     };
+
+    return expenses.stream()
+        .filter(expense -> !IGNORED_DESCRIPTIONS.contains(expense.getDescription()))
+        .toList();
   }
 
   private <T> T withRecords(MultipartFile file, Charset charset, Function<List<CSVRecord>, T> mapper) {

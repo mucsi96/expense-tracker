@@ -131,6 +131,9 @@ Format tolerances (newer bank exports):
 - Account statement amount comes from "Individual amount", falling back to the
   absolute value of Debit, then Credit
 
+Summary rows (description "Total per currency" or "Total card bookings") are
+not imported.
+
 Duplicates are skipped: an expense with the same day, description and whole
 amount as an existing one is not imported again.
 
