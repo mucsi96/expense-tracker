@@ -1,0 +1,135 @@
+# Expense Tracker - Development Guidelines
+
+## General Code Style
+
+- Avoid fallbacks, prefer failing fast
+- Prefer functional programming patterns
+- Prefer immutable data structures
+
+## Java Style
+
+- Use Lombok annotations (@Data, @Builder, @RequiredArgsConstructor)
+- Constructor injection (via @RequiredArgsConstructor)
+- Use Stream API for collections
+- Use records for DTOs/responses
+
+## TypeScript Style
+
+- Use `const` by default
+- Prefer spread operator for object/array operations
+- Use functional array methods (map, filter, reduce)
+- Use string literals over enums
+
+## Testing Style
+
+- Write tests from user perspective
+- Use role-based selectors (getByRole)
+- Use semantic selectors (getByText, getByLabel)
+- E2E tests with Playwright
+
+## Angular Style
+
+- Use Angular Material components
+- Use signals and resources (not rxjs where possible)
+- Use string literals over enums
+- Standalone components
+
+## Design
+
+- Material UI dark theme
+- Skeleton loaders for loading states
+
+## Project Overview
+
+A web app to track expenses, revenues, and budget. Built on the patterns of
+[skeleton-app](https://github.com/mucsi96/skeleton-app):
+- CI/CD pipeline (GitHub Actions)
+- Deployment (Docker images published to registry)
+- Client (Angular with Material UI)
+- Server (Spring Boot with Java 21)
+- Authentication (Azure AD / MSAL)
+- Configuration (Azure Key Vault, Spring profiles)
+- AI integration (Anthropic Claude via Spring AI)
+- AI mocking (Express mock server)
+- Database (PostgreSQL with JPA)
+- Testing (Playwright E2E)
+
+## Architecture
+
+- **client/** - Angular SPA with Material UI, OIDC authentication
+- **server/** - Spring Boot REST API with PostgreSQL, Spring AI
+- **mock_anthropic_server/** - Express mock for Claude API
+- **test/** - Playwright E2E tests
+- **scripts/** - Build and deployment scripts
+- **.github/workflows/** - CI/CD pipelines
+
+## Key Technologies
+
+- Spring Boot 4, Java 21
+- Angular 22
+- PostgreSQL 17
+- Spring AI (Anthropic)
+- Azure AD (OIDC) authentication
+- Azure Key Vault for secrets
+- Traefik reverse proxy
+- Docker multi-stage builds
+- Playwright for E2E testing
+
+## Development Commands
+
+### Frontend
+```bash
+cd client && npm start        # Start dev server
+cd client && npm run build    # Production build
+```
+
+### Backend
+```bash
+cd server && mvn spring-boot:run -Dspring-boot.run.profiles=local  # Start with local profile
+```
+
+### Podman Development
+```bash
+scripts/pod_up.sh             # Build images and start test pod
+scripts/pod_down.sh           # Stop and clean up test pod
+scripts/dev_db_up.sh          # Start development PostgreSQL database
+scripts/dev_db_down.sh        # Stop development database
+```
+
+### Testing
+```bash
+cd test && npm test           # Run E2E tests
+cd test && npx playwright test --ui  # Interactive test runner
+```
+
+## API Routes
+
+- `GET /api/environment` - Client configuration (public)
+- `GET /api/expenses` - List expenses (authenticated)
+- `POST /api/upload` - Import expenses from a bank/card statement CSV (authenticated)
+- `GET /api/insight` - AI-powered spending insight (authenticated)
+
+## Data Model
+
+- **expenses** - Stores imported expenses (date, description, location, category, amount, currency, method, comment)
+
+## CSV Import
+
+Two statement formats are auto-detected by their header row:
+- **Account statement** (UTF-8, `;` separated, 14 columns) - mapped to "Direct payment" expenses
+- **Card statement** (ISO-8859-1, `;` separated, 13 columns) - mapped to "Card payment" expenses
+
+Duplicates are skipped: an expense with the same day, description and whole
+amount as an existing one is not imported again.
+
+## Configuration Patterns
+
+### Spring Profiles
+- **prod** - Production with Azure Key Vault and AAD
+- **local** - Local development with Podman DB
+- **test** - Testing with disabled auth and mock AI services
+
+### Environment Config
+- Server exposes `/api/environment` endpoint
+- Client fetches config before bootstrap
+- Conditionally enables mock OIDC based on `mockOAuth2ServerUri`

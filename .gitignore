@@ -1,1 +1,3 @@
-*.csv
+.kube/
+postgres-data/
+.direnv/

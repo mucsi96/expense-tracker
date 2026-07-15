@@ -1,10 +1,13 @@
 {
     "recommendations": [
+        "vmware.vscode-boot-dev-pack",
         "vscjava.vscode-java-pack",
-        "ms-azuretools.vscode-docker",
+        "angular.ng-template",
+        "editorconfig.editorconfig",
         "esbenp.prettier-vscode",
-        "mtxr.sqltools",
-        "mtxr.sqltools-driver-pg",
-        "angular.ng-template"
+        "anweber.vscode-httpyac",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "ms-playwright.playwright",
+        "dreamcatcher45.podmanager"
     ]
 }

@@ -1,0 +1,56 @@
+:host {
+  display: block;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  h1 {
+    color: var(--bt-text-strong);
+    margin: 0;
+  }
+}
+
+mat-card {
+  background: var(--bt-surface-1);
+  border: 1px solid var(--bt-outline);
+}
+
+.insight {
+  margin-bottom: 1.5rem;
+}
+
+.insight-text {
+  color: var(--bt-text-default);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+table {
+  width: 100%;
+}
+
+.empty-state {
+  color: var(--bt-text-muted);
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.insight-loading {
+  display: flex;
+  justify-content: center;
+  margin: 2rem auto;
+}
+
+.page-loading {
+  display: flex;
+  justify-content: center;
+  margin: 150px auto;
+}
