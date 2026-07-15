@@ -30,6 +30,7 @@ export class HomeComponent {
     'description',
     'category',
     'amount',
+    'type',
     'method',
   ];
 

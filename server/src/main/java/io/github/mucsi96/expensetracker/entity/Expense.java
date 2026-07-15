@@ -40,5 +40,7 @@ public class Expense {
 
   private String method;
 
+  private String type;
+
   private String comment;
 }

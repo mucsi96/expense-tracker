@@ -34,5 +34,8 @@ databaseChangeLog:
                   name: method
                   type: text
               - column:
+                  name: type
+                  type: text
+              - column:
                   name: comment
                   type: text

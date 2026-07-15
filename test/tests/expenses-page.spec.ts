@@ -42,6 +42,16 @@ test('imports expenses from account statement upload', async ({ page }) => {
   await expect(page.getByRole('cell', { name: '25.9 CHF' })).toBeVisible();
 });
 
+test('imports credit transactions as income', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('cell', { name: 'Migros Zurich' })).toBeVisible();
+
+  await page.locator('input[type="file"]').setInputFiles(join(__dirname, '../files/account-statement.csv'));
+
+  await expect(page.getByRole('cell', { name: 'Tax Refund' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Income' })).toBeVisible();
+});
+
 test('imports expenses from card statement upload', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('cell', { name: 'Migros Zurich' })).toBeVisible();

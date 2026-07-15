@@ -43,6 +43,7 @@ class UploadServiceTest {
     var expenses = uploadService.parseExpenses(file, CSVType.CARD_STATEMENT);
     assertEquals(1, expenses.size());
     assertEquals("7.2", expenses.get(0).getAmount().toString());
+    assertEquals("Expense", expenses.get(0).getType());
   }
 
   @Test
@@ -53,16 +54,28 @@ class UploadServiceTest {
     var expenses = uploadService.parseExpenses(file, CSVType.ACCOUNT_STATEMENT);
     assertEquals(1, expenses.size());
     assertEquals("225.00", expenses.get(0).getAmount().toString());
+    assertEquals("Expense", expenses.get(0).getType());
   }
 
   @Test
-  void e2eFixtureFiles() throws Exception {
-    for (String name : new String[] { "account-statement.csv", "card-statement.csv" }) {
-      byte[] bytes = Files.readAllBytes(Path.of("..", "test", "files", name));
-      MockMultipartFile file = new MockMultipartFile("file", name, "text/csv", bytes);
-      CSVType type = uploadService.detectCSVType(file).orElseThrow();
-      var expenses = uploadService.parseExpenses(file, type);
-      assertEquals(1, expenses.size());
-    }
+  void accountFixtureFile() throws Exception {
+    byte[] bytes = Files.readAllBytes(Path.of("..", "test", "files", "account-statement.csv"));
+    MockMultipartFile file = new MockMultipartFile("file", "account-statement.csv", "text/csv", bytes);
+    assertEquals(CSVType.ACCOUNT_STATEMENT, uploadService.detectCSVType(file).orElseThrow());
+    var expenses = uploadService.parseExpenses(file, CSVType.ACCOUNT_STATEMENT);
+    assertEquals(2, expenses.size());
+    assertEquals("Expense", expenses.get(0).getType());
+    assertEquals("Income", expenses.get(1).getType());
+    assertEquals("150.00", expenses.get(1).getAmount().toString());
+  }
+
+  @Test
+  void cardFixtureFile() throws Exception {
+    byte[] bytes = Files.readAllBytes(Path.of("..", "test", "files", "card-statement.csv"));
+    MockMultipartFile file = new MockMultipartFile("file", "card-statement.csv", "text/csv", bytes);
+    assertEquals(CSVType.CARD_STATEMENT, uploadService.detectCSVType(file).orElseThrow());
+    var expenses = uploadService.parseExpenses(file, CSVType.CARD_STATEMENT);
+    assertEquals(1, expenses.size());
+    assertEquals("Expense", expenses.get(0).getType());
   }
 }

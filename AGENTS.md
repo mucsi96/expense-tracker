@@ -111,7 +111,11 @@ cd test && npx playwright test --ui  # Interactive test runner
 
 ## Data Model
 
-- **expenses** - Stores imported expenses (date, description, location, category, amount, currency, method, comment)
+- **expenses** - Stores imported expenses (date, description, location, category, amount, currency, method, type, comment)
+
+Amounts are always positive; the `type` field ("Expense" or "Income") tells
+whether money went out (Debit) or came in (Credit). The AI insight only
+considers "Expense" rows.
 
 ## CSV Import
 

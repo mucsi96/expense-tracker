@@ -12,6 +12,7 @@ export interface Expense {
   amount: number | null;
   currency: string;
   method: string;
+  type: string;
   comment: string;
 }
 

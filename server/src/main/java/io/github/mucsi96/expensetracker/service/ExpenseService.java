@@ -51,6 +51,7 @@ public class ExpenseService {
         expense.getAmount(),
         expense.getCurrency(),
         expense.getMethod(),
+        expense.getType(),
         expense.getComment());
   }
 

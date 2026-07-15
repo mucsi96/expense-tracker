@@ -27,12 +27,13 @@ export async function insertExpense(
   category: string,
   amount: number,
   currency: string,
-  method: string
+  method: string,
+  type: string
 ) {
   await query(
-    `INSERT INTO expensetracker.expenses (expense_date, description, location, category, amount, currency, method, comment)
-     VALUES ($1, $2, '', $3, $4, $5, $6, '')`,
-    [date, description, category, amount, currency, method]
+    `INSERT INTO expensetracker.expenses (expense_date, description, location, category, amount, currency, method, type, comment)
+     VALUES ($1, $2, '', $3, $4, $5, $6, $7, '')`,
+    [date, description, category, amount, currency, method, type]
   );
 }
 

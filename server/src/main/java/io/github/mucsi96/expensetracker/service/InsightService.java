@@ -25,6 +25,7 @@ public class InsightService {
     List<ExpenseResponse> expenses = expenseService.getExpenses();
 
     Map<String, BigDecimal> totalsByCategory = expenses.stream()
+        .filter(expense -> "Expense".equals(expense.type()))
         .filter(expense -> expense.amount() != null)
         .collect(Collectors.groupingBy(
             expense -> expense.category() == null || expense.category().isBlank()

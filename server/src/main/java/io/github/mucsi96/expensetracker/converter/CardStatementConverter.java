@@ -48,6 +48,7 @@ public class CardStatementConverter {
         .amount(cardStatement.amount().orElse(null))
         .currency(cardStatement.currency())
         .method("Card payment")
+        .type(cardStatement.credit().isPresent() ? "Income" : "Expense")
         .comment("")
         .build();
   }

@@ -53,6 +53,7 @@ public class AccountStatementConverter {
         .amount(resolveAmount(accountStatement).orElse(null))
         .currency(accountStatement.currency())
         .method("Direct payment")
+        .type(accountStatement.credit().isPresent() ? "Income" : "Expense")
         .comment(accountStatement.description2())
         .build();
   }
