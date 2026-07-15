@@ -1,2 +1,11 @@
+Account number:;0285 00110045.40;
+IBAN:;CH32 0028 5285 1100 4540 A;
+From:;2026-07-01;
+Until:;2026-07-14;
+Opening balance:;1000.00;
+Closing balance:;974.10;
+Valued in:;CHF;
+Numbers of transactions in this period:;1;
+
 Trade date;Trade time;Booking date;Value date;Currency;Debit;Credit;Individual amount;Balance;Transaction no.;Description1;Description2;Description3;Footnotes;
-10.07.2026;09:15:00;10.07.2026;10.07.2026;CHF;25.90;;25.90;1000.00;9990001;Coffee Shop;Zurich HB;;
+2026-07-10;;2026-07-10;2026-07-10;CHF;-25.90;;;974.10;9990001;Coffee Shop;Zurich HB;"Reference no. QRR: 00 00000 00056 74011; Costs: E-Banking domestic";;

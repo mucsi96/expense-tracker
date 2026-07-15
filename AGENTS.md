@@ -119,6 +119,14 @@ Two statement formats are auto-detected by their header row:
 - **Account statement** (UTF-8, `;` separated, 14 columns) - mapped to "Direct payment" expenses
 - **Card statement** (ISO-8859-1, `;` separated, 13 columns) - mapped to "Card payment" expenses
 
+Format tolerances (newer bank exports):
+- Metadata preamble lines (account number, IBAN, balances, ...) and a leading
+  `sep=;` line are ignored; only rows matching the column count are imported
+- Account statement rows may end with a trailing `;` (parsed as a 15th empty column)
+- Dates are accepted as `dd.MM.yyyy` or ISO `yyyy-MM-dd`
+- Account statement amount comes from "Individual amount", falling back to the
+  absolute value of Debit, then Credit
+
 Duplicates are skipped: an expense with the same day, description and whole
 amount as an existing one is not imported again.
 

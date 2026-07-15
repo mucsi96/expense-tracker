@@ -1,5 +1,6 @@
 package io.github.mucsi96.expensetracker.converter;
 
+import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.util.Optional;
 
@@ -12,7 +13,10 @@ import io.github.mucsi96.expensetracker.util.ConvertUtils;
 
 public class AccountStatementConverter {
   public static Optional<AccountStatement> fromCSVRecord(CSVRecord record) {
-    if (record.size() != 14 || String.join(";", record.values()).equals(CSVType.ACCOUNT_STATEMENT.getHeader())) {
+    // Rows carry 14 columns; newer exports terminate every row with a
+    // separator, which parses as a 15th empty column.
+    if ((record.size() != 14 && record.size() != 15)
+        || String.join(";", record.values()).equals(CSVType.ACCOUNT_STATEMENT.getHeader())) {
       return Optional.empty();
     }
 
@@ -46,10 +50,18 @@ public class AccountStatementConverter {
         .description(accountStatement.description1())
         .location("")
         .category("")
-        .amount(accountStatement.individualAmount().orElse(null))
+        .amount(resolveAmount(accountStatement).orElse(null))
         .currency(accountStatement.currency())
         .method("Direct payment")
         .comment(accountStatement.description2())
         .build();
+  }
+
+  // Newer exports leave "Individual amount" empty and carry the signed value
+  // in the Debit (or Credit) column instead.
+  private static Optional<BigDecimal> resolveAmount(AccountStatement accountStatement) {
+    return accountStatement.individualAmount()
+        .or(() -> accountStatement.debit().map(BigDecimal::abs))
+        .or(() -> accountStatement.credit().map(BigDecimal::abs));
   }
 }
