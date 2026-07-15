@@ -1,0 +1,68 @@
+<div class="page-header">
+  <h1>Expenses</h1>
+  <button mat-flat-button [disabled]="uploading()" (click)="fileInput.click()">
+    Upload statement
+  </button>
+  <input
+    hidden
+    type="file"
+    accept=".csv"
+    #fileInput
+    (change)="onFileSelected($event)"
+  />
+</div>
+
+@if (insight.isLoading()) {
+<bt-bar-loader class="insight-loading" label="Loading insight" />
+} @else if (insight.value()) {
+<mat-card class="insight">
+  <mat-card-content>
+    <p class="insight-text">{{ insight.value()?.insight }}</p>
+  </mat-card-content>
+</mat-card>
+}
+
+@if (expenses.isLoading() || uploading()) {
+<bt-bar-loader class="page-loading" label="Loading expenses" />
+} @else {
+<table mat-table [dataSource]="expenses.value() ?? []">
+  <ng-container matColumnDef="date">
+    <th mat-header-cell *matHeaderCellDef>Date</th>
+    <td mat-cell *matCellDef="let expense">
+      {{ expense.date | date: 'mediumDate' }}
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="description">
+    <th mat-header-cell *matHeaderCellDef>Description</th>
+    <td mat-cell *matCellDef="let expense">{{ expense.description }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="category">
+    <th mat-header-cell *matHeaderCellDef>Category</th>
+    <td mat-cell *matCellDef="let expense">{{ expense.category }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="amount">
+    <th mat-header-cell *matHeaderCellDef>Amount</th>
+    <td mat-cell *matCellDef="let expense">
+      {{ expense.amount }} {{ expense.currency }}
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="type">
+    <th mat-header-cell *matHeaderCellDef>Type</th>
+    <td mat-cell *matCellDef="let expense">{{ expense.type }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="method">
+    <th mat-header-cell *matHeaderCellDef>Method</th>
+    <td mat-cell *matCellDef="let expense">{{ expense.method }}</td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+</table>
+@if (!expenses.value()?.length) {
+<p class="empty-state">No expenses yet. Upload a bank statement to get started.</p>
+} }

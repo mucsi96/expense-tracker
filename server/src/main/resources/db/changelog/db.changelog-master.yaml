@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1-create-expenses-table
+      author: mucsi96
+      changes:
+        - createTable:
+            tableName: expenses
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: expense_date
+                  type: timestamptz
+              - column:
+                  name: description
+                  type: text
+              - column:
+                  name: location
+                  type: text
+              - column:
+                  name: category
+                  type: text
+              - column:
+                  name: amount
+                  type: numeric(19, 4)
+              - column:
+                  name: currency
+                  type: text
+              - column:
+                  name: method
+                  type: text
+              - column:
+                  name: type
+                  type: text
+              - column:
+                  name: comment
+                  type: text
