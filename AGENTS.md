@@ -49,16 +49,13 @@ A web app to track expenses, revenues, and budget. Built on the patterns of
 - Server (Spring Boot with Java 21)
 - Authentication (Azure AD / MSAL)
 - Configuration (Azure Key Vault, Spring profiles)
-- AI integration (Anthropic Claude via Spring AI)
-- AI mocking (Express mock server)
 - Database (PostgreSQL with JPA)
 - Testing (Playwright E2E)
 
 ## Architecture
 
 - **client/** - Angular SPA with Material UI, OIDC authentication
-- **server/** - Spring Boot REST API with PostgreSQL, Spring AI
-- **mock_anthropic_server/** - Express mock for Claude API
+- **server/** - Spring Boot REST API with PostgreSQL
 - **test/** - Playwright E2E tests
 - **scripts/** - Build and deployment scripts
 - **.github/workflows/** - CI/CD pipelines
@@ -68,7 +65,6 @@ A web app to track expenses, revenues, and budget. Built on the patterns of
 - Spring Boot 4, Java 21
 - Angular 22
 - PostgreSQL 17
-- Spring AI (Anthropic)
 - Azure AD (OIDC) authentication
 - Azure Key Vault for secrets
 - Traefik reverse proxy
@@ -107,15 +103,13 @@ cd test && npx playwright test --ui  # Interactive test runner
 - `GET /api/environment` - Client configuration (public)
 - `GET /api/expenses` - List expenses (authenticated)
 - `POST /api/upload` - Import expenses from a bank/card statement CSV (authenticated)
-- `GET /api/insight` - AI-powered spending insight (authenticated)
 
 ## Data Model
 
 - **expenses** - Stores imported expenses (date, description, location, category, amount, currency, method, type, comment)
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
-whether money went out (Debit) or came in (Credit). The AI insight only
-considers "Expense" rows.
+whether money went out (Debit) or came in (Credit).
 
 ## CSV Import
 
@@ -131,6 +125,9 @@ Format tolerances (newer bank exports):
 - Account statement amount comes from "Individual amount", falling back to the
   absolute value of Debit, then Credit
 
+Summary rows (description "Total per currency" or "Total card bookings") are
+not imported.
+
 Duplicates are skipped: an expense with the same day, description and whole
 amount as an existing one is not imported again.
 
@@ -139,7 +136,7 @@ amount as an existing one is not imported again.
 ### Spring Profiles
 - **prod** - Production with Azure Key Vault and AAD
 - **local** - Local development with Podman DB
-- **test** - Testing with disabled auth and mock AI services
+- **test** - Testing with mock OIDC provider
 
 ### Environment Config
 - Server exposes `/api/environment` endpoint

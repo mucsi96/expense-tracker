@@ -9,16 +9,6 @@ export const test = base.extend({
     await insertExpense('2026-07-01T10:00:00Z', 'Migros Zurich', 'Groceries', 42.5, 'CHF', 'Card payment', 'Expense');
     await insertExpense('2026-07-03T10:00:00Z', 'SBB Ticket', 'Transport', 12.8, 'CHF', 'Direct payment', 'Expense');
 
-    // Reset mock AI server
-    try {
-      await fetch('http://localhost:3060/reset', {
-        method: 'POST',
-        signal: AbortSignal.timeout(5000),
-      });
-    } catch (error) {
-      console.warn('Warning: Could not reset mock AI server:', error);
-    }
-
     // Capture browser console logs
     const consoleLogs: string[] = [];
     page.on('console', (msg) => {

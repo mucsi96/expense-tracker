@@ -1,3 +1,5 @@
 sep=;
 Account number;Card number;Account/Cardholder;Purchase date;Booking text;Sector;Amount;Original currency;Rate;Currency;Debit;Credit;Booked
 0000 0000 0000 0000;1111 1111 1111 1111;TEST USER;05.07.2026;Coop Pronto;Groceries;18.60;CHF;;CHF;;;
+0000 0000 0000 0000;;;;Total per currency;;;;;CHF;18.60;;
+0000 0000 0000 0000;;;;Total card bookings;;;;;CHF;18.60;;
