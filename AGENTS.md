@@ -102,6 +102,7 @@ cd test && npx playwright test --ui  # Interactive test runner
 
 - `GET /api/environment` - Client configuration (public)
 - `GET /api/expenses` - List expenses (authenticated)
+- `DELETE /api/expenses` - Delete all expenses (authenticated)
 - `POST /api/upload` - Import expenses from a bank/card statement CSV (authenticated)
 
 ## Data Model
