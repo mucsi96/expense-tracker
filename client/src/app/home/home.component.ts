@@ -15,6 +15,7 @@ import {
   NotificationsService,
 } from '@mucsi96/angular-material-theme';
 import { Expense, ExpenseService } from '../expense.service';
+import { MonthlyCategoryChartComponent } from '../monthly-category-chart/monthly-category-chart.component';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -25,7 +26,7 @@ ModuleRegistry.registerModules([
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [BarLoaderComponent, AgGridAngular],
+  imports: [BarLoaderComponent, AgGridAngular, MonthlyCategoryChartComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })

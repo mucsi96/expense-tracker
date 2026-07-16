@@ -1,10 +1,13 @@
 import {
   ApplicationConfig,
+  Provider,
   inject,
   provideAppInitializer,
   provideZoneChangeDetection,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import * as echarts from 'echarts';
+import { NGX_ECHARTS_CONFIG } from 'ngx-echarts';
 
 import {
   provideHttpClient,
@@ -32,6 +35,13 @@ const globalRippleConfig: RippleGlobalOptions = {
   disabled: true,
 };
 
+function provideECharts(): Provider {
+  return {
+    provide: NGX_ECHARTS_CONFIG,
+    useFactory: () => ({ echarts }),
+  };
+}
+
 export function getAppConfig(environment: EnvironmentConfig): ApplicationConfig {
   return {
     providers: [
@@ -51,6 +61,7 @@ export function getAppConfig(environment: EnvironmentConfig): ApplicationConfig 
       { provide: ENVIRONMENT_CONFIG, useValue: environment },
       provideOidcAuth(environment),
       provideAppInitializer(() => inject(AuthService).init()),
+      provideECharts(),
     ],
   };
 }

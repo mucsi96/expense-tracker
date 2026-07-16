@@ -1,0 +1,16 @@
+@let chart = chartOptions();
+
+@if (chart) {
+<section aria-label="Monthly spending by category">
+  <h2>Monthly spending by category</h2>
+  <div class="chart-wrapper">
+    <div
+      role="img"
+      class="chart"
+      echarts
+      [options]="chart"
+      [initOpts]="initOpts"
+    ></div>
+  </div>
+</section>
+}

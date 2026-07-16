@@ -5,6 +5,7 @@
 @if (expenses.isLoading() || uploading()) {
 <bt-bar-loader class="page-loading" label="Loading expenses" />
 } @else {
+<app-monthly-category-chart />
 <div
   class="dropzone"
   [class.drag-over]="dragOver()"

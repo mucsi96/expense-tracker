@@ -49,6 +49,22 @@ test('displays expenses from database', async ({ page }) => {
   await expect(page.getByRole('gridcell', { name: 'SBB Ticket' })).toBeVisible();
 });
 
+test('displays monthly spending by category chart', async ({ page }) => {
+  await page.goto('/');
+  const chartSection = page.getByRole('region', {
+    name: 'Monthly spending by category',
+  });
+  await expect(
+    chartSection.getByRole('heading', { name: 'Monthly spending by category' })
+  ).toBeVisible();
+  await expect(
+    chartSection.getByRole('img', { name: /This is a chart/ })
+  ).toBeVisible();
+  await expect(chartSection.getByText('Groceries')).toBeVisible();
+  await expect(chartSection.getByText('Transport')).toBeVisible();
+  await expect(chartSection.getByText('Jul 2026')).toBeVisible();
+});
+
 test('imports expenses from account statement dropped on the grid', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
