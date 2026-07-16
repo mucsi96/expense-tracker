@@ -44,6 +44,26 @@ test('clears all transactions after confirmation', async ({ page }) => {
   }).toBe(0);
 });
 
+test('shows error notification when cleanup fails', async ({ page }) => {
+  await page.route(
+    '**/api/expenses',
+    (route) =>
+      route.request().method() === 'DELETE'
+        ? route.fulfill({ status: 500 })
+        : route.fallback()
+  );
+  await openSettings(page);
+
+  await page.getByRole('button', { name: 'Clear all transactions' }).click();
+  await page.getByRole('button', { name: 'Delete' }).click();
+
+  await expect(page.getByText('Failed to delete transactions')).toBeVisible();
+  await expect.poll(async () => {
+    const expenses = await getExpenses();
+    return expenses.length;
+  }).toBe(2);
+});
+
 test('keeps transactions when cleanup is cancelled', async ({ page }) => {
   await openSettings(page);
 

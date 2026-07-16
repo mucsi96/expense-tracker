@@ -31,7 +31,7 @@ public class ExpenseService {
   }
 
   public void deleteAllExpenses() {
-    expenseRepository.deleteAll();
+    expenseRepository.deleteAllInBatch();
   }
 
   public int importExpenses(List<Expense> expenses) {
