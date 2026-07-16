@@ -27,7 +27,7 @@ test('asks for confirmation before clearing transactions', async ({ page }) => {
     page.getByRole('heading', { name: 'Clear all transactions?' })
   ).toBeVisible();
   await expect(
-    page.getByText('This action cannot be undone', { exact: false })
+    page.getByRole('dialog').getByText('This action cannot be undone')
   ).toBeVisible();
 });
 
