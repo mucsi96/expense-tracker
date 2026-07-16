@@ -29,12 +29,6 @@ spring:
         jwt:
           issuer-uri: https://login.microsoftonline.com/${tenant-id:}/v2.0
           audiences: ${api-client-id:}
-  ai:
-    anthropic:
-      api-key: ${claude-api-key}
-      chat:
-        options:
-          model: claude-sonnet-4-6
 server:
   forward-headers-strategy: framework
   servlet:

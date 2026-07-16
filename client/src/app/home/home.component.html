@@ -2,16 +2,6 @@
   <h1>Expenses</h1>
 </div>
 
-@if (insight.isLoading()) {
-<bt-bar-loader class="insight-loading" label="Loading insight" />
-} @else if (insight.value()) {
-<mat-card class="insight">
-  <mat-card-content>
-    <p class="insight-text">{{ insight.value()?.insight }}</p>
-  </mat-card-content>
-</mat-card>
-}
-
 @if (expenses.isLoading() || uploading()) {
 <bt-bar-loader class="page-loading" label="Loading expenses" />
 } @else {

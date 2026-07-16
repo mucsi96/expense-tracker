@@ -11,7 +11,6 @@ else
   echo "Building container images..."
   podman build -t localhost/expense-tracker-server:test "$PROJECT_DIR/server" &
   podman build -t localhost/expense-tracker-client:test "$PROJECT_DIR/client" &
-  podman build -t localhost/expense-tracker-mock-anthropic:test "$PROJECT_DIR/mock_anthropic_server" &
   wait
 fi
 

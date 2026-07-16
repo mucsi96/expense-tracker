@@ -1,8 +1,7 @@
 # Expense Tracker
 
 A web app to track expenses, revenues, and budget. Bank and card statement
-CSV exports are imported, de-duplicated and listed with an AI-generated
-spending insight.
+CSV exports are imported, de-duplicated and listed.
 
 Based on the patterns from [skeleton-app](https://github.com/mucsi96/skeleton-app).
 
@@ -14,8 +13,6 @@ Based on the patterns from [skeleton-app](https://github.com/mucsi96/skeleton-ap
 - **Server** - Spring Boot with Java 21
 - **Authentication** - Azure AD (OIDC) with conditional mock auth for testing
 - **Configuration** - Azure Key Vault + Spring profiles (prod/local/test)
-- **AI Integration** - Anthropic Claude via Spring AI
-- **AI Mocking** - Express mock server for testing
 - **Database** - PostgreSQL with Spring Data JPA and Liquibase
 - **Testing** - Playwright E2E tests
 - **UI Components** - Material UI with custom dark theme
@@ -28,7 +25,6 @@ avoid clashes with other local projects (skeleton-app uses xx50–xx59).
 
 | Port | Service              | Context                             |
 |------|----------------------|-------------------------------------|
-| 3060 | Mock Anthropic API   | Test pod                            |
 | 4260 | Angular dev server   | Local dev                           |
 | 5460 | PostgreSQL           | Dev database                        |
 | 5461 | PostgreSQL           | Test pod                            |

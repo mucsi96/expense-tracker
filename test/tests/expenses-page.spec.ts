@@ -49,11 +49,6 @@ test('displays expenses from database', async ({ page }) => {
   await expect(page.getByRole('gridcell', { name: 'SBB Ticket' })).toBeVisible();
 });
 
-test('displays AI-generated spending insight', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByText('You spent the most on Groceries this month.')).toBeVisible();
-});
-
 test('imports expenses from account statement dropped on the grid', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();

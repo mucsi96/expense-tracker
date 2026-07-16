@@ -1,5 +1,4 @@
 import { Component, inject, signal } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   type ColDef,
@@ -16,7 +15,6 @@ import {
   NotificationsService,
 } from '@mucsi96/angular-material-theme';
 import { Expense, ExpenseService } from '../expense.service';
-import { InsightService } from '../insight.service';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -27,7 +25,7 @@ ModuleRegistry.registerModules([
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [BarLoaderComponent, MatCardModule, AgGridAngular],
+  imports: [BarLoaderComponent, AgGridAngular],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
@@ -35,7 +33,6 @@ export class HomeComponent {
   private readonly expenseService = inject(ExpenseService);
   private readonly notifications = inject(NotificationsService);
   readonly expenses = this.expenseService.expenses;
-  readonly insight = inject(InsightService).insight;
   readonly uploading = signal(false);
   readonly dragOver = signal(false);
 
@@ -142,28 +139,22 @@ export class HomeComponent {
     this.uploading.set(true);
     try {
       // Sequential so server-side duplicate detection sees earlier imports
-      const results = [];
       for (const file of csvFiles) {
-        results.push(await this.uploadFile(file));
-      }
-      if (results.some(Boolean)) {
-        this.insight.reload();
+        await this.uploadFile(file);
       }
     } finally {
       this.uploading.set(false);
     }
   }
 
-  private async uploadFile(file: File): Promise<boolean> {
+  private async uploadFile(file: File): Promise<void> {
     try {
       const response = await this.expenseService.uploadStatement(file);
       this.notifications.success(
         `${response.importedCount} expense(s) imported from ${file.name}`
       );
-      return true;
     } catch {
       this.notifications.error(`Failed to import ${file.name}`);
-      return false;
     }
   }
 }
