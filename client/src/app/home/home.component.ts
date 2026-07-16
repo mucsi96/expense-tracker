@@ -1,5 +1,4 @@
 import { Component, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
@@ -12,7 +11,10 @@ import {
   themeMaterial,
   colorSchemeDarkBlue,
 } from 'ag-grid-community';
-import { BarLoaderComponent } from '@mucsi96/angular-material-theme';
+import {
+  BarLoaderComponent,
+  NotificationsService,
+} from '@mucsi96/angular-material-theme';
 import { Expense, ExpenseService } from '../expense.service';
 import { InsightService } from '../insight.service';
 
@@ -25,20 +27,17 @@ ModuleRegistry.registerModules([
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [
-    BarLoaderComponent,
-    MatButtonModule,
-    MatCardModule,
-    AgGridAngular,
-  ],
+  imports: [BarLoaderComponent, MatCardModule, AgGridAngular],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
 export class HomeComponent {
   private readonly expenseService = inject(ExpenseService);
+  private readonly notifications = inject(NotificationsService);
   readonly expenses = this.expenseService.expenses;
   readonly insight = inject(InsightService).insight;
   readonly uploading = signal(false);
+  readonly dragOver = signal(false);
 
   readonly theme = themeMaterial.withPart(colorSchemeDarkBlue).withParams({
     backgroundColor: 'hsl(215, 28%, 17%)',
@@ -109,21 +108,62 @@ export class HomeComponent {
     event.api.sizeColumnsToFit();
   }
 
-  async onFileSelected(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.dragOver.set(true);
+  }
 
-    if (!file) {
+  onDragLeave(event: DragEvent): void {
+    // dragleave also fires when moving onto a child of the dropzone
+    const dropzone = event.currentTarget as HTMLElement;
+    if (event.relatedTarget && dropzone.contains(event.relatedTarget as Node)) {
+      return;
+    }
+    this.dragOver.set(false);
+  }
+
+  async onDrop(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    this.dragOver.set(false);
+
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    if (!files.length) {
+      return;
+    }
+
+    const csvFiles = files.filter((file) =>
+      file.name.toLowerCase().endsWith('.csv')
+    );
+    if (!csvFiles.length) {
+      this.notifications.error('Only CSV statements are supported');
       return;
     }
 
     this.uploading.set(true);
     try {
-      await this.expenseService.uploadStatement(file);
-      this.insight.reload();
+      // Sequential so server-side duplicate detection sees earlier imports
+      const results = [];
+      for (const file of csvFiles) {
+        results.push(await this.uploadFile(file));
+      }
+      if (results.some(Boolean)) {
+        this.insight.reload();
+      }
     } finally {
       this.uploading.set(false);
+    }
+  }
+
+  private async uploadFile(file: File): Promise<boolean> {
+    try {
+      const response = await this.expenseService.uploadStatement(file);
+      this.notifications.success(
+        `${response.importedCount} expense(s) imported from ${file.name}`
+      );
+      return true;
+    } catch {
+      this.notifications.error(`Failed to import ${file.name}`);
+      return false;
     }
   }
 }

@@ -1,15 +1,5 @@
 <div class="page-header">
   <h1>Expenses</h1>
-  <button mat-flat-button [disabled]="uploading()" (click)="fileInput.click()">
-    Upload statement
-  </button>
-  <input
-    hidden
-    type="file"
-    accept=".csv"
-    #fileInput
-    (change)="onFileSelected($event)"
-  />
 </div>
 
 @if (insight.isLoading()) {
@@ -24,15 +14,30 @@
 
 @if (expenses.isLoading() || uploading()) {
 <bt-bar-loader class="page-loading" label="Loading expenses" />
-} @else if (expenses.value()?.length) {
-<ag-grid-angular
-  class="expenses-grid"
-  [theme]="theme"
-  [columnDefs]="columnDefs"
-  [defaultColDef]="defaultColDef"
-  [rowData]="expenses.value()"
-  (gridReady)="onGridReady($event)"
-/>
 } @else {
-<p class="empty-state">No expenses yet. Upload a bank statement to get started.</p>
+<div
+  class="dropzone"
+  [class.drag-over]="dragOver()"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave($event)"
+  (drop)="onDrop($event)"
+>
+  @if (expenses.value()?.length) {
+  <ag-grid-angular
+    class="expenses-grid"
+    [theme]="theme"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="defaultColDef"
+    [rowData]="expenses.value()"
+    (gridReady)="onGridReady($event)"
+  />
+  } @else {
+  <p class="empty-state">
+    No expenses yet. Drop a bank statement CSV here to get started.
+  </p>
+  }
+  @if (dragOver()) {
+  <div class="drop-overlay">Drop CSV statement to import</div>
+  }
+</div>
 }
