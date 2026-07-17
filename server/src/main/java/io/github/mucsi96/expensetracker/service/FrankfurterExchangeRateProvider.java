@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -27,13 +28,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Profile("!test")
 public class FrankfurterExchangeRateProvider implements ExchangeRateProvider {
   private static final Duration CACHE_TTL = Duration.ofDays(1);
+  private static final int TIMEOUT_MILLIS = 5000;
 
   private final RestClient restClient;
   private final Map<CacheKey, CachedRate> cache = new ConcurrentHashMap<>();
 
   public FrankfurterExchangeRateProvider(
       @Value("${expense-tracker.exchange-rate-api-url:https://api.frankfurter.dev/v1}") String baseUrl) {
-    this.restClient = RestClient.builder().baseUrl(baseUrl).build();
+    SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+    requestFactory.setConnectTimeout(TIMEOUT_MILLIS);
+    requestFactory.setReadTimeout(TIMEOUT_MILLIS);
+    this.restClient = RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory).build();
   }
 
   @Override
