@@ -107,10 +107,19 @@ cd test && npx playwright test --ui  # Interactive test runner
 
 ## Data Model
 
-- **expenses** - Stores imported expenses (date, description, location, category, amount, currency, method, type, comment)
+- **expenses** - Stores imported expenses (date, description, location,
+  category, amount, currency, converted_amount, base_currency, method, type,
+  comment)
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).
+
+`amount`/`currency` hold the original transaction value in the currency it was
+made in. `converted_amount`/`base_currency` hold the same value converted to the
+reporting currency (CHF by default, configurable via
+`expense-tracker.base-currency`). Reporting (e.g. the monthly chart) uses the
+converted amount so mixed currencies aggregate correctly, while duplicate
+detection uses the original amount.
 
 ## CSV Import
 
@@ -129,8 +138,20 @@ Format tolerances (newer bank exports):
 Summary rows (description "Total per currency" or "Total card bookings") are
 not imported.
 
+### Currency conversion
+
+Foreign-currency transactions are stored with both their original amount and a
+converted amount in the base currency (CHF). Card statements carry the exchange
+rate the bank actually applied ("Rate" column) and the "Original currency"; the
+converted amount is `amount × rate` (which reproduces the statement's own
+settlement figure). Rows already in the base currency are stored unchanged. A
+foreign amount without a rate fails fast rather than being silently treated as
+CHF.
+
 Duplicates are skipped: an expense with the same day, description and whole
-amount as an existing one is not imported again.
+(original) amount as an existing one is not imported again. Using the original
+amount keeps duplicate detection stable across re-imports regardless of
+conversion.
 
 ## Configuration Patterns
 

@@ -39,3 +39,26 @@ databaseChangeLog:
               - column:
                   name: comment
                   type: text
+  - changeSet:
+      id: 2-add-converted-amount
+      author: mucsi96
+      changes:
+        - addColumn:
+            tableName: expenses
+            columns:
+              - column:
+                  name: converted_amount
+                  type: numeric(19, 4)
+              - column:
+                  name: base_currency
+                  type: text
+        - update:
+            tableName: expenses
+            columns:
+              - column:
+                  name: converted_amount
+                  valueComputed: amount
+              - column:
+                  name: base_currency
+                  valueComputed: currency
+            where: converted_amount IS NULL

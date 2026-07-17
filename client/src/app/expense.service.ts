@@ -11,6 +11,8 @@ export interface Expense {
   category: string;
   amount: number | null;
   currency: string;
+  convertedAmount: number | null;
+  baseCurrency: string;
   method: string;
   type: string;
   comment: string;

@@ -94,6 +94,18 @@ test('imports expenses from card statement dropped on the grid', async ({ page }
   await expect(page.getByRole('gridcell', { name: 'Coop Pronto' })).toBeVisible();
 });
 
+test('preserves foreign currency and stores the converted amount', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
+
+  await dropStatements(page, join(__dirname, '../files/card-statement.csv'));
+
+  // Original amount keeps its own currency instead of being labelled CHF
+  await expect(page.getByRole('gridcell', { name: 'Lidl Konstanz' })).toBeVisible();
+  await expect(page.getByRole('gridcell', { name: '20 EUR', exact: true })).toBeVisible();
+  await expect(page.getByRole('gridcell', { name: '19 CHF', exact: true })).toBeVisible();
+});
+
 test('imports multiple statements dropped together', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();

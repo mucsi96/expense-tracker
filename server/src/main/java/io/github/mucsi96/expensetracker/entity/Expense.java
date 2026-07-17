@@ -38,6 +38,12 @@ public class Expense {
 
   private String currency;
 
+  @Column(name = "converted_amount")
+  private BigDecimal convertedAmount;
+
+  @Column(name = "base_currency")
+  private String baseCurrency;
+
   private String method;
 
   private String type;

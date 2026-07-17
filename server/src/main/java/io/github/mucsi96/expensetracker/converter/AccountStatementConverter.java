@@ -5,14 +5,21 @@ import java.time.ZoneId;
 import java.util.Optional;
 
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.stereotype.Component;
 
 import io.github.mucsi96.expensetracker.entity.Expense;
 import io.github.mucsi96.expensetracker.enums.CSVType;
 import io.github.mucsi96.expensetracker.model.AccountStatement;
+import io.github.mucsi96.expensetracker.service.CurrencyConversionService;
 import io.github.mucsi96.expensetracker.util.ConvertUtils;
+import lombok.RequiredArgsConstructor;
 
+@Component
+@RequiredArgsConstructor
 public class AccountStatementConverter {
-  public static Optional<AccountStatement> fromCSVRecord(CSVRecord record) {
+  private final CurrencyConversionService currencyConversionService;
+
+  public Optional<AccountStatement> fromCSVRecord(CSVRecord record) {
     // Rows carry 14 columns; newer exports terminate every row with a
     // separator, which parses as a 15th empty column.
     if ((record.size() != 14 && record.size() != 15)
@@ -42,7 +49,8 @@ public class AccountStatementConverter {
     }
   }
 
-  public static Expense toExpense(AccountStatement accountStatement) {
+  public Expense toExpense(AccountStatement accountStatement) {
+    Optional<BigDecimal> amount = resolveAmount(accountStatement);
     return Expense.builder()
         .date(accountStatement.tradeDate()
             .map(date -> date.atStartOfDay(ZoneId.of("Europe/Zurich")).toInstant())
@@ -50,8 +58,11 @@ public class AccountStatementConverter {
         .description(accountStatement.description1())
         .location("")
         .category("")
-        .amount(resolveAmount(accountStatement).orElse(null))
+        .amount(amount.orElse(null))
         .currency(accountStatement.currency())
+        .convertedAmount(currencyConversionService.convertToBase(
+            amount, accountStatement.currency(), Optional.empty()).orElse(null))
+        .baseCurrency(currencyConversionService.getBaseCurrency())
         .method("Direct payment")
         .type(accountStatement.credit().isPresent() ? "Income" : "Expense")
         .comment(accountStatement.description2())

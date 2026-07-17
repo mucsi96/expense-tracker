@@ -10,11 +10,17 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
+import io.github.mucsi96.expensetracker.converter.AccountStatementConverter;
+import io.github.mucsi96.expensetracker.converter.CardStatementConverter;
+import io.github.mucsi96.expensetracker.entity.Expense;
 import io.github.mucsi96.expensetracker.enums.CSVType;
 
 class UploadServiceTest {
 
-  UploadService uploadService = new UploadService();
+  CurrencyConversionService currencyConversionService = new CurrencyConversionService("CHF");
+  UploadService uploadService = new UploadService(
+      new AccountStatementConverter(currencyConversionService),
+      new CardStatementConverter(currencyConversionService));
 
   static final String CARD_CSV = """
       sep=;
@@ -38,6 +44,13 @@ class UploadServiceTest {
       2026-07-14;;2026-07-14;2026-07-14;CHF;-225.00;;;-590.19;8385195TO9070959;"Gemeinde Birmensdorf ZH;Stallikonerstrasse 9; 8903 Birmensdorf; CH";e-banking payment order;"Reference no. QRR: 00 00000 00056 74011 11899 91005; Reason for payment: Rechnung Nr. 11118999; Account no. IBAN: CH90 3000 0002 8000 9900 6; Costs: E-Banking domestic; Transaction no. 8385195TO9070959";;
       """;
 
+  static final String FOREIGN_CARD_CSV = """
+      sep=;
+      Account number;Card number;Account/Cardholder;Purchase date;Booking text;Sector;Amount;Original currency;Rate;Currency;Debit;Credit;Booked
+      3842 7186 6400;5101 99XX XXXX 7324;IGOR BARI;25.04.2026;Aral Station 191329101   Passau       DEU;Gasoline service stations;162.15;EUR;0.95418677;CHF;154.72;;27.04.2026
+      3842 7186 6400;5101 99XX XXXX 7324;IGOR BARI;25.04.2026;NH BUDAPEST CITY  CP H   BUDAPEST     HUN;Hotels;25.47;CHF;;CHF;25.47;;27.04.2026
+      """;
+
   @Test
   void newCardFormat() {
     MockMultipartFile file = new MockMultipartFile("file", "card.csv", "text/csv",
@@ -46,7 +59,33 @@ class UploadServiceTest {
     var expenses = uploadService.parseExpenses(file, CSVType.CARD_STATEMENT);
     assertEquals(1, expenses.size());
     assertEquals("7.2", expenses.get(0).getAmount().toString());
+    assertEquals("CHF", expenses.get(0).getCurrency());
+    assertEquals("7.20", expenses.get(0).getConvertedAmount().toString());
+    assertEquals("CHF", expenses.get(0).getBaseCurrency());
     assertEquals("Expense", expenses.get(0).getType());
+  }
+
+  @Test
+  void convertsForeignCardAmountsToBaseCurrency() {
+    MockMultipartFile file = new MockMultipartFile("file", "card.csv", "text/csv",
+        FOREIGN_CARD_CSV.getBytes(StandardCharsets.ISO_8859_1));
+    var expenses = uploadService.parseExpenses(file, CSVType.CARD_STATEMENT);
+    assertEquals(2, expenses.size());
+
+    // Foreign row: original amount/currency preserved, converted via the
+    // statement's own exchange rate.
+    Expense foreign = expenses.get(0);
+    assertEquals("162.15", foreign.getAmount().toString());
+    assertEquals("EUR", foreign.getCurrency());
+    assertEquals("154.72", foreign.getConvertedAmount().toString());
+    assertEquals("CHF", foreign.getBaseCurrency());
+
+    // Already-base-currency row: converted equals the original amount.
+    Expense domestic = expenses.get(1);
+    assertEquals("25.47", domestic.getAmount().toString());
+    assertEquals("CHF", domestic.getCurrency());
+    assertEquals("25.47", domestic.getConvertedAmount().toString());
+    assertEquals("CHF", domestic.getBaseCurrency());
   }
 
   @Test
@@ -88,7 +127,14 @@ class UploadServiceTest {
     MockMultipartFile file = new MockMultipartFile("file", "card-statement.csv", "text/csv", bytes);
     assertEquals(CSVType.CARD_STATEMENT, uploadService.detectCSVType(file).orElseThrow());
     var expenses = uploadService.parseExpenses(file, CSVType.CARD_STATEMENT);
-    assertEquals(1, expenses.size());
+    assertEquals(2, expenses.size());
     assertEquals("Expense", expenses.get(0).getType());
+
+    Expense foreign = expenses.get(1);
+    assertEquals("Lidl Konstanz", foreign.getDescription());
+    assertEquals("20.00", foreign.getAmount().toString());
+    assertEquals("EUR", foreign.getCurrency());
+    assertEquals("19.00", foreign.getConvertedAmount().toString());
+    assertEquals("CHF", foreign.getBaseCurrency());
   }
 }

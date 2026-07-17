@@ -85,6 +85,18 @@ export class HomeComponent {
         params.value != null ? `${params.value} ${params.data?.currency}` : '',
     },
     {
+      headerName: 'Converted',
+      field: 'convertedAmount',
+      width: 130,
+      sortable: true,
+      // Only meaningful for foreign-currency rows; base-currency rows would
+      // just repeat the Amount column.
+      valueFormatter: (params) =>
+        params.value != null && params.data?.currency !== params.data?.baseCurrency
+          ? `${params.value} ${params.data?.baseCurrency}`
+          : '',
+    },
+    {
       headerName: 'Type',
       field: 'type',
       width: 110,
