@@ -2,6 +2,7 @@ package io.github.mucsi96.expensetracker.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,7 +18,11 @@ import io.github.mucsi96.expensetracker.enums.CSVType;
 
 class UploadServiceTest {
 
-  CurrencyConversionService currencyConversionService = new CurrencyConversionService("CHF");
+  // Fixed rates so conversion is deterministic and independent of the rate the
+  // statement itself carries (proving the exchange-rate service drives it).
+  ExchangeRateProvider exchangeRateProvider = (from, to, date) -> new BigDecimal("0.95");
+  CurrencyConversionService currencyConversionService = new CurrencyConversionService("CHF",
+      exchangeRateProvider);
   UploadService uploadService = new UploadService(
       new AccountStatementConverter(currencyConversionService),
       new CardStatementConverter(currencyConversionService));
@@ -73,11 +78,11 @@ class UploadServiceTest {
     assertEquals(2, expenses.size());
 
     // Foreign row: original amount/currency preserved, converted via the
-    // statement's own exchange rate.
+    // exchange-rate service (0.95), not the statement's own rate (0.95418677).
     Expense foreign = expenses.get(0);
     assertEquals("162.15", foreign.getAmount().toString());
     assertEquals("EUR", foreign.getCurrency());
-    assertEquals("154.72", foreign.getConvertedAmount().toString());
+    assertEquals("154.04", foreign.getConvertedAmount().toString());
     assertEquals("CHF", foreign.getBaseCurrency());
 
     // Already-base-currency row: converted equals the original amount.

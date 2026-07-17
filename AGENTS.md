@@ -141,12 +141,14 @@ not imported.
 ### Currency conversion
 
 Foreign-currency transactions are stored with both their original amount and a
-converted amount in the base currency (CHF). Card statements carry the exchange
-rate the bank actually applied ("Rate" column) and the "Original currency"; the
-converted amount is `amount × rate` (which reproduces the statement's own
-settlement figure). Rows already in the base currency are stored unchanged. A
-foreign amount without a rate fails fast rather than being silently treated as
-CHF.
+converted amount in the base currency (CHF). Conversion uses the public
+[Frankfurter](https://frankfurter.dev) exchange-rate API (ECB reference rates,
+no API key), looked up for the transaction date and cached in memory for one
+day (`expense-tracker.exchange-rate-api-url`, default `https://api.frankfurter.dev/v1`).
+Rows already in the base currency are stored unchanged; a foreign amount without
+a transaction date fails fast rather than being silently treated as CHF. The
+`test` profile swaps in a deterministic stub provider so E2E imports need no
+network. Prod/local deployments need outbound access to the API host.
 
 Duplicates are skipped: an expense with the same day, description and whole
 (original) amount as an existing one is not imported again. Using the original

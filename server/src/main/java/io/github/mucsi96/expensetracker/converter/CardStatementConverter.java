@@ -47,7 +47,8 @@ public class CardStatementConverter {
   public Expense toExpense(CardStatement cardStatement) {
     // "Amount"/"Original currency" hold what was actually spent; "Currency" is
     // the account's settlement currency. Store the original as-is (used for
-    // duplicate detection) and the converted value for reporting.
+    // duplicate detection) and a converted value (via the exchange-rate service
+    // for the purchase date) for reporting.
     return Expense.builder()
         .date(cardStatement.purchaseDate()
             .map(date -> date.atStartOfDay(ZoneId.of("Europe/Zurich")).toInstant())
@@ -58,7 +59,7 @@ public class CardStatementConverter {
         .amount(cardStatement.amount().orElse(null))
         .currency(cardStatement.originalCurrency())
         .convertedAmount(currencyConversionService.convertToBase(
-            cardStatement.amount(), cardStatement.originalCurrency(), cardStatement.rate()).orElse(null))
+            cardStatement.amount(), cardStatement.originalCurrency(), cardStatement.purchaseDate()).orElse(null))
         .baseCurrency(currencyConversionService.getBaseCurrency())
         .method("Card payment")
         .type(cardStatement.credit().isPresent() ? "Income" : "Expense")

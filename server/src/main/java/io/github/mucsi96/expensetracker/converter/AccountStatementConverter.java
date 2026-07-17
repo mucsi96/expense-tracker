@@ -61,7 +61,7 @@ public class AccountStatementConverter {
         .amount(amount.orElse(null))
         .currency(accountStatement.currency())
         .convertedAmount(currencyConversionService.convertToBase(
-            amount, accountStatement.currency(), Optional.empty()).orElse(null))
+            amount, accountStatement.currency(), accountStatement.tradeDate()).orElse(null))
         .baseCurrency(currencyConversionService.getBaseCurrency())
         .method("Direct payment")
         .type(accountStatement.credit().isPresent() ? "Income" : "Expense")
