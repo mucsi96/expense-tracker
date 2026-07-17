@@ -35,7 +35,7 @@ public class FrankfurterExchangeRateProvider implements ExchangeRateProvider {
   private final Map<CacheKey, CachedRate> cache = new ConcurrentHashMap<>();
 
   public FrankfurterExchangeRateProvider(
-      @Value("${expense-tracker.exchange-rate-api-url:https://api.frankfurter.dev/v1}") String baseUrl) {
+      @Value("${expense-tracker.exchange-rate-api-url}") String baseUrl) {
     SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
     requestFactory.setConnectTimeout(TIMEOUT_MILLIS);
     requestFactory.setReadTimeout(TIMEOUT_MILLIS);
