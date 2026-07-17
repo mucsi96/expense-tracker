@@ -3,6 +3,7 @@ package io.github.mucsi96.expensetracker.controller;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,5 +20,11 @@ public class ExpenseController {
   @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_readExpenses')")
   public List<ExpenseResponse> getExpenses() {
     return expenseService.getExpenses();
+  }
+
+  @DeleteMapping("/expenses")
+  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_deleteExpenses')")
+  public void deleteExpenses() {
+    expenseService.deleteAllExpenses();
   }
 }

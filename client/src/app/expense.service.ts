@@ -39,4 +39,9 @@ export class ExpenseService {
     this.expenses.reload();
     return response;
   }
+
+  async deleteAllExpenses(): Promise<void> {
+    await firstValueFrom(this.http.delete<void>('/api/expenses'));
+    this.expenses.reload();
+  }
 }

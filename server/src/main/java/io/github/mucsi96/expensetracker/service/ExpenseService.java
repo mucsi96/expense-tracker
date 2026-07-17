@@ -30,6 +30,10 @@ public class ExpenseService {
         .toList();
   }
 
+  public void deleteAllExpenses() {
+    expenseRepository.deleteAllInBatch();
+  }
+
   public int importExpenses(List<Expense> expenses) {
     Set<ExpenseKey> existingKeys = expenseRepository.findAll().stream()
         .map(ExpenseKey::of)
