@@ -4,14 +4,21 @@ import java.time.ZoneId;
 import java.util.Optional;
 
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.stereotype.Component;
 
 import io.github.mucsi96.expensetracker.entity.Expense;
 import io.github.mucsi96.expensetracker.enums.CSVType;
 import io.github.mucsi96.expensetracker.model.CardStatement;
+import io.github.mucsi96.expensetracker.service.CurrencyConversionService;
 import io.github.mucsi96.expensetracker.util.ConvertUtils;
+import lombok.RequiredArgsConstructor;
 
+@Component
+@RequiredArgsConstructor
 public class CardStatementConverter {
-  public static Optional<CardStatement> fromCSVRecord(CSVRecord record) {
+  private final CurrencyConversionService currencyConversionService;
+
+  public Optional<CardStatement> fromCSVRecord(CSVRecord record) {
     if (record.size() != 13 || String.join(";", record.values()).equals(CSVType.CARD_STATEMENT.getHeader())) {
       return Optional.empty();
     }
@@ -37,7 +44,11 @@ public class CardStatementConverter {
     }
   }
 
-  public static Expense toExpense(CardStatement cardStatement) {
+  public Expense toExpense(CardStatement cardStatement) {
+    // "Amount"/"Original currency" hold what was actually spent; "Currency" is
+    // the account's settlement currency. Store the original as-is (used for
+    // duplicate detection) and a converted value (via the exchange-rate service
+    // for the purchase date) for reporting.
     return Expense.builder()
         .date(cardStatement.purchaseDate()
             .map(date -> date.atStartOfDay(ZoneId.of("Europe/Zurich")).toInstant())
@@ -46,7 +57,10 @@ public class CardStatementConverter {
         .location("")
         .category(cardStatement.sector())
         .amount(cardStatement.amount().orElse(null))
-        .currency(cardStatement.currency())
+        .currency(cardStatement.originalCurrency())
+        .convertedAmount(currencyConversionService.convertToBase(
+            cardStatement.amount(), cardStatement.originalCurrency(), cardStatement.purchaseDate()).orElse(null))
+        .baseCurrency(currencyConversionService.getBaseCurrency())
         .method("Card payment")
         .type(cardStatement.credit().isPresent() ? "Income" : "Expense")
         .comment("")

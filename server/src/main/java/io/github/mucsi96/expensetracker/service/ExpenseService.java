@@ -54,6 +54,8 @@ public class ExpenseService {
         expense.getCategory(),
         expense.getAmount(),
         expense.getCurrency(),
+        expense.getConvertedAmount(),
+        expense.getBaseCurrency(),
         expense.getMethod(),
         expense.getType(),
         expense.getComment());

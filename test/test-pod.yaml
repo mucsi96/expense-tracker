@@ -76,6 +76,22 @@ spec:
         periodSeconds: 2
         failureThreshold: 5
 
+    - name: mock-exchange-rate
+      image: localhost/expense-tracker-mock-exchange-rate:test
+      ports:
+        - containerPort: 8065
+          hostPort: 8065
+      env:
+        - name: PORT
+          value: "8065"
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 8065
+        initialDelaySeconds: 2
+        periodSeconds: 2
+        failureThreshold: 5
+
     - name: server
       image: localhost/expense-tracker-server:test
       env:

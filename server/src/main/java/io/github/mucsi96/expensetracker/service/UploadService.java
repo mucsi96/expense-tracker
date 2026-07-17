@@ -22,13 +22,18 @@ import io.github.mucsi96.expensetracker.converter.AccountStatementConverter;
 import io.github.mucsi96.expensetracker.converter.CardStatementConverter;
 import io.github.mucsi96.expensetracker.entity.Expense;
 import io.github.mucsi96.expensetracker.enums.CSVType;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class UploadService {
   private static final CSVFormat CSV_FORMAT = CSVFormat.EXCEL.builder().setDelimiter(";").build();
 
   // Summary rows in bank exports, not actual transactions
   private static final Set<String> IGNORED_DESCRIPTIONS = Set.of("Total per currency", "Total card bookings");
+
+  private final AccountStatementConverter accountStatementConverter;
+  private final CardStatementConverter cardStatementConverter;
 
   public Optional<CSVType> detectCSVType(MultipartFile file) {
     List<String> lines = withRecords(file, StandardCharsets.UTF_8, records -> records.stream()
@@ -43,14 +48,14 @@ public class UploadService {
   public List<Expense> parseExpenses(MultipartFile file, CSVType type) {
     List<Expense> expenses = switch (type) {
       case ACCOUNT_STATEMENT -> withRecords(file, StandardCharsets.UTF_8, records -> records.stream()
-          .map(AccountStatementConverter::fromCSVRecord)
+          .map(accountStatementConverter::fromCSVRecord)
           .flatMap(Optional::stream)
-          .map(AccountStatementConverter::toExpense)
+          .map(accountStatementConverter::toExpense)
           .toList());
       case CARD_STATEMENT -> withRecords(file, StandardCharsets.ISO_8859_1, records -> records.stream()
-          .map(CardStatementConverter::fromCSVRecord)
+          .map(cardStatementConverter::fromCSVRecord)
           .flatMap(Optional::stream)
-          .map(CardStatementConverter::toExpense)
+          .map(cardStatementConverter::toExpense)
           .toList());
     };
 

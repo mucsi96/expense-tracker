@@ -56,6 +56,8 @@ A web app to track expenses, revenues, and budget. Built on the patterns of
 
 - **client/** - Angular SPA with Material UI, OIDC authentication
 - **server/** - Spring Boot REST API with PostgreSQL
+- **mock_exchange_rate_server/** - Express mock of the Frankfurter exchange
+  rate API, used by the E2E test pod
 - **test/** - Playwright E2E tests
 - **scripts/** - Build and deployment scripts
 - **.github/workflows/** - CI/CD pipelines
@@ -107,10 +109,19 @@ cd test && npx playwright test --ui  # Interactive test runner
 
 ## Data Model
 
-- **expenses** - Stores imported expenses (date, description, location, category, amount, currency, method, type, comment)
+- **expenses** - Stores imported expenses (date, description, location,
+  category, amount, currency, converted_amount, base_currency, method, type,
+  comment)
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).
+
+`amount`/`currency` hold the original transaction value in the currency it was
+made in. `converted_amount`/`base_currency` hold the same value converted to the
+reporting currency (CHF by default, configurable via
+`expense-tracker.base-currency`). Reporting (e.g. the monthly chart) uses the
+converted amount so mixed currencies aggregate correctly, while duplicate
+detection uses the original amount.
 
 ## CSV Import
 
@@ -129,8 +140,24 @@ Format tolerances (newer bank exports):
 Summary rows (description "Total per currency" or "Total card bookings") are
 not imported.
 
+### Currency conversion
+
+Foreign-currency transactions are stored with both their original amount and a
+converted amount in the base currency (CHF). Conversion uses the public
+[Frankfurter](https://frankfurter.dev) exchange-rate API (ECB reference rates,
+no API key), looked up for the transaction date and cached in memory for one
+day (`expense-tracker.exchange-rate-api-url`, default `https://api.frankfurter.dev/v1`).
+Rows already in the base currency are stored unchanged; a foreign amount without
+a transaction date fails fast rather than being silently treated as CHF. E2E
+tests run the real provider against a Frankfurter-compatible Express mock
+(`mock_exchange_rate_server/`, wired into the test pod and pointed at via
+`application-test.yml`) so imports need no external network. Prod/local
+deployments need outbound access to the API host.
+
 Duplicates are skipped: an expense with the same day, description and whole
-amount as an existing one is not imported again.
+(original) amount as an existing one is not imported again. Using the original
+amount keeps duplicate detection stable across re-imports regardless of
+conversion.
 
 ## Configuration Patterns
 

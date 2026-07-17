@@ -11,6 +11,8 @@ public record ExpenseResponse(
     String category,
     BigDecimal amount,
     String currency,
+    BigDecimal convertedAmount,
+    String baseCurrency,
     String method,
     String type,
     String comment) {

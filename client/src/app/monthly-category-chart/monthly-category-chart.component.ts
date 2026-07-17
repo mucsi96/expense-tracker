@@ -29,14 +29,14 @@ function toMonthLabel(monthKey: string): string {
 function computeMonthlySpending(expenses: Expense[]): MonthlySpending {
   const spendings = expenses.filter(
     (expense) =>
-      expense.type === 'Expense' && expense.date && expense.amount != null
+      expense.type === 'Expense' && expense.date && expense.convertedAmount != null
   );
   const months = [
     ...new Set(spendings.map((expense) => toMonthKey(expense.date!))),
   ].sort();
   const totals = spendings.reduce((acc, expense) => {
     const key = `${toMonthKey(expense.date!)}|${expense.category}`;
-    return acc.set(key, (acc.get(key) ?? 0) + expense.amount!);
+    return acc.set(key, (acc.get(key) ?? 0) + expense.convertedAmount!);
   }, new Map<string, number>());
   const categories = [
     ...new Set(spendings.map((expense) => expense.category)),

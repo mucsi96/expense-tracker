@@ -43,10 +43,19 @@ jobs:
           tags: localhost/expense-tracker-client:test
           cache-from: type=gha,scope=client
           cache-to: type=gha,mode=max,scope=client
+      - name: Build mock exchange rate image
+        uses: docker/build-push-action@v6
+        with:
+          context: mock_exchange_rate_server
+          load: true
+          tags: localhost/expense-tracker-mock-exchange-rate:test
+          cache-from: type=gha,scope=mock-exchange-rate
+          cache-to: type=gha,mode=max,scope=mock-exchange-rate
       - name: Load images into Podman
         run: |
           docker save localhost/expense-tracker-server:test | podman load
           docker save localhost/expense-tracker-client:test | podman load
+          docker save localhost/expense-tracker-mock-exchange-rate:test | podman load
       - name: Setup test environment and start pod
         env:
           SKIP_BUILD: "1"

@@ -1,3 +1,15 @@
 {
-  "properties": []
+  "properties": [
+    {
+      "name": "expense-tracker.base-currency",
+      "type": "java.lang.String",
+      "description": "Reporting currency that imported amounts are converted to before storage.",
+      "defaultValue": "CHF"
+    },
+    {
+      "name": "expense-tracker.exchange-rate-api-url",
+      "type": "java.lang.String",
+      "description": "Base URL of the Frankfurter-compatible exchange rate API used for currency conversion."
+    }
+  ]
 }
