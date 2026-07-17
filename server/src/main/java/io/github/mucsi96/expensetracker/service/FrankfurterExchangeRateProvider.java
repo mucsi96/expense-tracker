@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -23,9 +22,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * Results are cached in memory for one day so a statement import - which
  * typically repeats the same few (currency, date) pairs across many rows -
  * hits the API at most once per pair per day.
+ *
+ * The base URL is configurable so tests can point it at a local mock server
+ * ({@code mock_exchange_rate_server}) instead of the live API.
  */
 @Component
-@Profile("!test")
 public class FrankfurterExchangeRateProvider implements ExchangeRateProvider {
   private static final Duration CACHE_TTL = Duration.ofDays(1);
   private static final int TIMEOUT_MILLIS = 5000;

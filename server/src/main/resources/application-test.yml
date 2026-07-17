@@ -1,3 +1,6 @@
+expense-tracker:
+  exchange-rate-api-url: http://localhost:8065/v1
+
 spring:
   cloud:
     azure:

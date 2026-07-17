@@ -56,6 +56,8 @@ A web app to track expenses, revenues, and budget. Built on the patterns of
 
 - **client/** - Angular SPA with Material UI, OIDC authentication
 - **server/** - Spring Boot REST API with PostgreSQL
+- **mock_exchange_rate_server/** - Express mock of the Frankfurter exchange
+  rate API, used by the E2E test pod
 - **test/** - Playwright E2E tests
 - **scripts/** - Build and deployment scripts
 - **.github/workflows/** - CI/CD pipelines
@@ -146,9 +148,11 @@ converted amount in the base currency (CHF). Conversion uses the public
 no API key), looked up for the transaction date and cached in memory for one
 day (`expense-tracker.exchange-rate-api-url`, default `https://api.frankfurter.dev/v1`).
 Rows already in the base currency are stored unchanged; a foreign amount without
-a transaction date fails fast rather than being silently treated as CHF. The
-`test` profile swaps in a deterministic stub provider so E2E imports need no
-network. Prod/local deployments need outbound access to the API host.
+a transaction date fails fast rather than being silently treated as CHF. E2E
+tests run the real provider against a Frankfurter-compatible Express mock
+(`mock_exchange_rate_server/`, wired into the test pod and pointed at via
+`application-test.yml`) so imports need no external network. Prod/local
+deployments need outbound access to the API host.
 
 Duplicates are skipped: an expense with the same day, description and whole
 (original) amount as an existing one is not imported again. Using the original
