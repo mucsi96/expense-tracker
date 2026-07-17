@@ -28,7 +28,7 @@ export class AuthService {
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly user = signal<User | null>(null);
-  private readonly authorityError = signal<string | null>(null);
+  private readonly authorityErrorSignal = signal<string | null>(null);
   private inFlightRefresh: Promise<User | null> | null = null;
   private lastForegroundRefresh = 0;
   private returnedFromAuthority = false;
@@ -40,7 +40,7 @@ export class AuthService {
    * scope, misconfigured client) becomes an infinite redirect loop. Only an
    * explicit user-initiated login() clears it.
    */
-  readonly authError = this.authorityError.asReadonly();
+  readonly authorityError = this.authorityErrorSignal.asReadonly();
 
   readonly isAuthenticated = computed(() => {
     const user = this.user();
@@ -61,7 +61,7 @@ export class AuthService {
   }
 
   login(): void {
-    this.authorityError.set(null);
+    this.authorityErrorSignal.set(null);
     console.info(
       '[auth] Full re-authentication started (redirect to authority)'
     );
@@ -99,6 +99,10 @@ export class AuthService {
    * a full authority redirect. Returns a Promise - CanActivateFn accepts it.
    */
   async ensureAuthenticated(): Promise<boolean> {
+    // Deliberately checked before touching storage: no route may activate and
+    // no automatic redirect may start while the error is set. AppComponent
+    // replaces the router outlet with the error card in this state, so the
+    // stale `user` signal is never rendered behind it.
     if (this.authorityError()) {
       console.warn(
         '[auth] Auth guard blocked - authority returned an error, waiting for user-initiated retry instead of redirecting again',
@@ -239,12 +243,15 @@ export class AuthService {
       } catch (error) {
         // Prefer the authority's own error_description (e.g. the full AADSTS
         // message) - when the state lookup fails the library error is only
-        // "No matching state found in storage".
-        const description =
+        // "No matching state found in storage". Accepted trade-off: these
+        // query params can be attacker-crafted (any link to our origin), so
+        // the text is rendered escaped-only and capped in length.
+        const description = (
           url.searchParams.get('error_description') ??
           url.searchParams.get('error') ??
-          errorMessage(error);
-        this.authorityError.set(description);
+          errorMessage(error)
+        ).slice(0, 500);
+        this.authorityErrorSignal.set(description);
         console.error(
           '[auth] Cold start - redirect callback failed',
           JSON.stringify({ error: errorMessage(error), description })

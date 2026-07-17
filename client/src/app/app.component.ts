@@ -22,7 +22,7 @@ export class AppComponent {
   private readonly authService = inject(AuthService);
 
   isAuthenticated = this.authService.isAuthenticated;
-  authError = this.authService.authError;
+  authorityError = this.authService.authorityError;
 
   retryLogin(): void {
     this.authService.login();

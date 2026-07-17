@@ -10,7 +10,7 @@
 </mat-toolbar>
 
 <main>
-  @if (authError(); as error) {
+  @if (authorityError(); as error) {
   <div class="auth-error" role="alert">
     <h1>Sign-in failed</h1>
     <p>The sign-in service rejected the request:</p>
