@@ -23,19 +23,15 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Get skeleton app changes from last week
+      - name: Download published skeleton app diff
         id: skeleton-diff
         run: |
-          git clone --shallow-since="14 days ago" https://github.com/mucsi96/skeleton-app.git /tmp/skeleton-app
-          cd /tmp/skeleton-app
-          SINCE=$(date -d '14 days ago' --iso-8601)
-          DIFF=$(git log --since="$SINCE" -p --no-merges)
-          if [ -z "$DIFF" ]; then
-            echo "No changes found in skeleton-app in the last week"
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "$DIFF" > /tmp/skeleton-diff.patch
+          curl -fsSL https://mucsi96.github.io/skeleton-app/diff.patch -o /tmp/skeleton-diff.patch
+          if [ -s /tmp/skeleton-diff.patch ]; then
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No changes found in the published skeleton-app diff"
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Apply relevant changes with Claude
@@ -46,8 +42,8 @@ jobs:
           prompt: |
             You are synchronizing patterns and approaches from a skeleton-app into this repository.
 
-            The file `/tmp/skeleton-diff.patch` contains the git log with diffs of all changes
-            made to https://github.com/mucsi96/skeleton-app in the last week.
+            The file `/tmp/skeleton-diff.patch` contains the published diff of recent changes
+            made to https://github.com/mucsi96/skeleton-app.
 
             Your task:
             1. Read `/tmp/skeleton-diff.patch` to understand what changed in the skeleton app
