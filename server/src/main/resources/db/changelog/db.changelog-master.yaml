@@ -62,3 +62,31 @@ databaseChangeLog:
                   name: base_currency
                   valueComputed: currency
             where: converted_amount IS NULL
+  - changeSet:
+      id: 3-create-bank-notifications-table
+      author: mucsi96
+      changes:
+        - createTable:
+            tableName: bank_notifications
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: received_at
+                  type: timestamptz
+              - column:
+                  name: from_address
+                  type: text
+              - column:
+                  name: to_address
+                  type: text
+              - column:
+                  name: subject
+                  type: text
+              - column:
+                  name: raw
+                  type: text

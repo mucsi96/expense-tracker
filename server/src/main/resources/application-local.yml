@@ -1,3 +1,5 @@
+bank-notification-token: local-bank-notification-token
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5460/expensetracker

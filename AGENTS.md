@@ -106,12 +106,17 @@ cd test && npx playwright test --ui  # Interactive test runner
 - `GET /api/expenses` - List expenses (authenticated)
 - `DELETE /api/expenses` - Delete all expenses (authenticated)
 - `POST /api/upload` - Import expenses from a bank/card statement CSV (authenticated)
+- `POST /api/bank-notifications` - Receive a bank card notification email from
+  the Cloudflare email worker (bearer-token authenticated, see below)
 
 ## Data Model
 
 - **expenses** - Stores imported expenses (date, description, location,
   category, amount, currency, converted_amount, base_currency, method, type,
   comment)
+- **bank_notifications** - Stores bank card notification emails received via
+  `POST /api/bank-notifications` (received_at, from_address, to_address,
+  subject, raw)
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).
@@ -139,6 +144,19 @@ Format tolerances (newer bank exports):
 
 Summary rows (description "Total per currency" or "Total card bookings") are
 not imported.
+
+## Bank Notifications
+
+A Cloudflare Email Worker receives bank card notification emails and forwards
+each one as JSON (`from`, `to`, `subject`, `raw`) to
+`POST /api/bank-notifications`, which stores it in the `bank_notifications`
+table. The endpoint is not part of the Azure AD user flow; it has its own
+security filter chain that authenticates the worker with a static bearer token
+compared in constant time. The token comes from the `bank-notification-token`
+property — the Azure Key Vault secret of the same name in prod, fixed values in
+the `test` and `local` profiles. A missing or blank token fails startup; a
+missing or wrong `Authorization: Bearer` header yields 401, which makes the
+worker fail the delivery so the sending mail server retries later.
 
 ### Currency conversion
 

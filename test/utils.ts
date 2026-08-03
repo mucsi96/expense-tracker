@@ -19,6 +19,7 @@ export async function query(text: string, params?: any[]) {
 
 export async function cleanupDb() {
   await query('DELETE FROM expensetracker.expenses');
+  await query('DELETE FROM expensetracker.bank_notifications');
 }
 
 export async function insertExpense(
@@ -39,5 +40,10 @@ export async function insertExpense(
 
 export async function getExpenses() {
   const result = await query('SELECT * FROM expensetracker.expenses ORDER BY id');
+  return result.rows;
+}
+
+export async function getBankNotifications() {
+  const result = await query('SELECT * FROM expensetracker.bank_notifications ORDER BY id');
   return result.rows;
 }

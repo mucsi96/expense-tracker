@@ -10,6 +10,11 @@
       "name": "expense-tracker.exchange-rate-api-url",
       "type": "java.lang.String",
       "description": "Base URL of the Frankfurter-compatible exchange rate API used for currency conversion."
+    },
+    {
+      "name": "bank-notification-token",
+      "type": "java.lang.String",
+      "description": "Static bearer token the bank email worker uses to authenticate against POST /api/bank-notifications. Served by the Azure Key Vault secret of the same name in prod."
     }
   ]
 }
