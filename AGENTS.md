@@ -146,14 +146,10 @@ not imported.
 
 A Cloudflare Email Worker receives bank card notification emails and forwards
 each one as JSON (`from`, `to`, `subject`, `raw`) to
-`POST /api/bank-notifications`, which stores it directly as a "Card payment"
-expense: the amount is the first `CHF 12.50` / `12.50 CHF` style money value
-(with a valid ISO 4217 currency code) found in the subject or body, the
-subject becomes the description and the arrival time the expense date.
-Foreign amounts go through the usual currency conversion, and the regular
-duplicate detection also swallows redelivery of the same email. A notification
-without a recognizable amount is rejected with 400 rather than stored
-incomplete.
+`POST /api/bank-notifications`. For now the endpoint only logs the
+notification to the console so the exact message format can be captured from
+the production logs; parsing it into an expense row will be implemented once
+the format is known.
 
 The endpoint is not part of the Azure AD user flow; it has its own security
 filter chain that authenticates the worker with a static bearer token compared

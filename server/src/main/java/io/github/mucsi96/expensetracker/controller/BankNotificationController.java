@@ -11,28 +11,28 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.mucsi96.expensetracker.model.BankNotificationRequest;
-import io.github.mucsi96.expensetracker.service.BankNotificationService;
-import io.github.mucsi96.expensetracker.service.UnparseableBankNotificationException;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Logs received bank card notification emails so the exact message format can
+ * be captured from the logs. Parsing into expenses comes once the format is
+ * known.
+ */
 @RestController
-@RequiredArgsConstructor
+@Slf4j
 public class BankNotificationController {
-  private final BankNotificationService bankNotificationService;
 
   @PostMapping("/bank-notifications")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void receive(@Valid @RequestBody BankNotificationRequest request) {
-    bankNotificationService.store(request);
+    log.info("Received bank notification from={} to={} subject={}\n{}",
+        request.from(), request.to(), request.subject(), request.raw());
   }
 
   // Respond directly instead of dispatching to /error, which belongs to the
   // JWT filter chain and would turn a bad request into a 401.
-  @ExceptionHandler({
-      MethodArgumentNotValidException.class,
-      HttpMessageNotReadableException.class,
-      UnparseableBankNotificationException.class })
+  @ExceptionHandler({ MethodArgumentNotValidException.class, HttpMessageNotReadableException.class })
   ResponseEntity<Void> handleInvalidRequest() {
     return ResponseEntity.badRequest().build();
   }
