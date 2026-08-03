@@ -114,9 +114,6 @@ cd test && npx playwright test --ui  # Interactive test runner
 - **expenses** - Stores imported expenses (date, description, location,
   category, amount, currency, converted_amount, base_currency, method, type,
   comment)
-- **bank_notifications** - Stores bank card notification emails received via
-  `POST /api/bank-notifications` (received_at, from_address, to_address,
-  subject, raw)
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).
@@ -149,14 +146,22 @@ not imported.
 
 A Cloudflare Email Worker receives bank card notification emails and forwards
 each one as JSON (`from`, `to`, `subject`, `raw`) to
-`POST /api/bank-notifications`, which stores it in the `bank_notifications`
-table. The endpoint is not part of the Azure AD user flow; it has its own
-security filter chain that authenticates the worker with a static bearer token
-compared in constant time. The token comes from the `bank-notification-token`
-property — the Azure Key Vault secret of the same name in prod, fixed values in
-the `test` and `local` profiles. A missing or blank token fails startup; a
-missing or wrong `Authorization: Bearer` header yields 401, which makes the
-worker fail the delivery so the sending mail server retries later.
+`POST /api/bank-notifications`, which stores it directly as a "Card payment"
+expense: the amount is the first `CHF 12.50` / `12.50 CHF` style money value
+(with a valid ISO 4217 currency code) found in the subject or body, the
+subject becomes the description and the arrival time the expense date.
+Foreign amounts go through the usual currency conversion, and the regular
+duplicate detection also swallows redelivery of the same email. A notification
+without a recognizable amount is rejected with 400 rather than stored
+incomplete.
+
+The endpoint is not part of the Azure AD user flow; it has its own security
+filter chain that authenticates the worker with a static bearer token compared
+in constant time. The token comes from the `bank-notification-token` property —
+the Azure Key Vault secret of the same name in prod, fixed values in the `test`
+and `local` profiles. A missing or blank token fails startup; a missing or
+wrong `Authorization: Bearer` header yields 401, which makes the worker fail
+the delivery so the sending mail server retries later.
 
 ### Currency conversion
 

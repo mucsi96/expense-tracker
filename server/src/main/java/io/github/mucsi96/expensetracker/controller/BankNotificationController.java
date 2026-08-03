@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.mucsi96.expensetracker.model.BankNotificationRequest;
 import io.github.mucsi96.expensetracker.service.BankNotificationService;
+import io.github.mucsi96.expensetracker.service.UnparseableBankNotificationException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -28,7 +29,10 @@ public class BankNotificationController {
 
   // Respond directly instead of dispatching to /error, which belongs to the
   // JWT filter chain and would turn a bad request into a 401.
-  @ExceptionHandler({ MethodArgumentNotValidException.class, HttpMessageNotReadableException.class })
+  @ExceptionHandler({
+      MethodArgumentNotValidException.class,
+      HttpMessageNotReadableException.class,
+      UnparseableBankNotificationException.class })
   ResponseEntity<Void> handleInvalidRequest() {
     return ResponseEntity.badRequest().build();
   }
