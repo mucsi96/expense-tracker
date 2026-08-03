@@ -9,16 +9,16 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "22.0.7",
-    "@angular/cdk": "22.0.5",
-    "@angular/common": "22.0.7",
-    "@angular/compiler": "22.0.7",
-    "@angular/core": "22.0.7",
-    "@angular/forms": "22.0.7",
-    "@angular/material": "22.0.5",
-    "@angular/platform-browser": "22.0.7",
-    "@angular/platform-browser-dynamic": "22.0.7",
-    "@angular/router": "22.0.7",
+    "@angular/animations": "22.1.0",
+    "@angular/cdk": "22.1.0",
+    "@angular/common": "22.1.0",
+    "@angular/compiler": "22.1.0",
+    "@angular/core": "22.1.0",
+    "@angular/forms": "22.1.0",
+    "@angular/material": "22.1.0",
+    "@angular/platform-browser": "22.1.0",
+    "@angular/platform-browser-dynamic": "22.1.0",
+    "@angular/router": "22.1.0",
     "@grafana/faro-web-sdk": "^2.7.0",
     "@mucsi96/angular-material-theme": "^1.4.0",
     "ag-grid-angular": "^35.3.1",
@@ -31,11 +31,11 @@
     "zone.js": "0.16.2"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "22.0.7",
-    "@angular-devkit/core": "22.0.7",
-    "@angular/build": "22.0.7",
-    "@angular/cli": "22.0.7",
-    "@angular/compiler-cli": "22.0.7",
+    "@angular-devkit/build-angular": "22.1.2",
+    "@angular-devkit/core": "22.1.2",
+    "@angular/build": "22.1.2",
+    "@angular/cli": "22.1.2",
+    "@angular/compiler-cli": "22.1.0",
     "typescript": "6.0.3"
   }
 }
