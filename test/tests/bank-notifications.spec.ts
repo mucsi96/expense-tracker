@@ -4,8 +4,9 @@ import { cleanupDb, getExpenses } from '../utils';
 // Matches bank-notification-token in application-test.yml
 const token = 'test-bank-notification-token';
 
-// Same shape as a real card debit notification (multipart/alternative with a
-// quoted-printable plain-text part), but with a fake bank, addresses and card
+// Same shape as a real card debit notification (multipart/mixed with a
+// quoted-printable HTML part carrying the transaction and a plain-text part
+// holding only a legal disclaimer), but with a fake bank, addresses and card
 // number throughout.
 const buildRaw = ({ amount = 'CHF 12.50', merchant = 'COFFEE SHOP Z=C3=9CRICH' } = {}) =>
   [
@@ -17,27 +18,27 @@ const buildRaw = ({ amount = 'CHF 12.50', merchant = 'COFFEE SHOP Z=C3=9CRICH' }
     'To: expenses@user.example',
     'Subject: Example Bank Digital Banking: Card debit',
     'MIME-Version: 1.0',
-    'Content-Type: multipart/alternative; boundary="----=_notification"',
+    'Content-Type: multipart/mixed; boundary="----=_notification"',
     '',
-    '------=_notification',
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: quoted-printable',
-    '',
-    'Good day',
-    '',
-    'We would like to inform you about the following card transaction:',
-    '',
-    'Card number: 4242 42XX XXXX 4242',
-    'Date: 04.08.2026 08:44:12',
-    `Amount: ${amount}`,
-    `Merchant: ${merchant}`,
-    '',
-    'Yours sincerely',
-    'Example Bank AG',
     '------=_notification',
     'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: quoted-printable',
     '',
-    `<html><body><p>Amount: ${amount}</p></body></html>`,
+    '<html><head><style type=3D"text/css">body { margin:0; }</style></head>',
+    '<body><table><tr><td>Hello,<br><br>',
+    '<!-- NOTIFICATION_CONTENT_BEGIN -->',
+    `${amount} have been charged to card "4242". ${merchant}. Available amount:=`,
+    ' CHF 7=E2=80=99317.38.',
+    '<!-- NOTIFICATION_CONTENT_END -->',
+    '<br><br>Kind regards,<br>Example Bank AG</td></tr></table></body></html>',
+    '------=_notification',
+    'Content-Type: text/plain; charset=us-ascii; name="disclaim.txt"',
+    'Content-Transfer-Encoding: 7bit',
+    'Content-Disposition: inline',
+    'Content-Description: Legal Disclaimer',
+    '',
+    'This message contains confidential information and is intended only',
+    'for the individual named.',
     '------=_notification--',
   ].join('\r\n');
 
@@ -73,8 +74,8 @@ test('stores bank notification as card payment expense', async ({ request }) => 
     method: 'Card payment',
     type: 'Expense',
   });
-  // 04.08.2026 08:44:12 Europe/Zurich
-  expect(new Date(expenses[0].expense_date).toISOString()).toBe('2026-08-04T06:44:12.000Z');
+  // No date in the body, so the email's Date header (08:44:31 +0200) is used
+  expect(new Date(expenses[0].expense_date).toISOString()).toBe('2026-08-04T06:44:31.000Z');
 });
 
 test('converts foreign amounts to the base currency', async ({ request }) => {
@@ -126,7 +127,9 @@ test('rejects notification in unrecognized format without storing', async ({ req
   expect(await getExpenses()).toHaveLength(0);
 });
 
-test('rejects notification without a plain-text part', async ({ request }) => {
+test('rejects notification without an HTML part', async ({ request }) => {
+  // The transaction data is complete, but only in a plain-text part, which
+  // the parser ignores
   const response = await request.post('/api/bank-notifications', {
     headers: { Authorization: `Bearer ${token}` },
     data: {
@@ -136,9 +139,11 @@ test('rejects notification without a plain-text part', async ({ request }) => {
         'From: Example Bank <noreply-alerting@bank.example>',
         'Subject: Example Bank Digital Banking: Card debit',
         'MIME-Version: 1.0',
-        'Content-Type: text/html; charset=UTF-8',
+        'Content-Type: text/plain; charset=UTF-8',
         '',
-        '<html><body><p>Date: 04.08.2026 08:44:12<br>Amount: CHF 12.50<br>Merchant: COFFEE SHOP ZUERICH</p></body></html>',
+        'Date: 04.08.2026 08:44:12',
+        'Amount: CHF 12.50',
+        'Merchant: COFFEE SHOP ZUERICH',
       ].join('\r\n'),
     },
   });

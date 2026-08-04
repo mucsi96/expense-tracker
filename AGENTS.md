@@ -147,17 +147,22 @@ not imported.
 A Cloudflare Email Worker receives bank card notification emails and forwards
 each one as JSON (`from`, `to`, `subject`, `raw`) to
 `POST /api/bank-notifications`. The endpoint parses the card debit
-notification into a "Card payment" expense. The plain-text part of the raw MIME message is
-decoded (quoted-printable/base64 transfer encodings, multipart/alternative)
-and the transaction is extracted from it; an email without a plain-text part
-is not recognized. Extraction rules:
+notification into a "Card payment" expense. The HTML part of the raw MIME
+message is decoded (quoted-printable/base64 transfer encodings, nested
+multiparts), reduced to its text (tags stripped, `<br>`/block ends become
+line breaks, basic entities decoded) and the transaction is extracted from
+it. Plain-text parts are ignored — the banks' notifications carry the
+transaction only in HTML while their sole plain-text part is a legal
+disclaimer — so an email without an HTML part is not recognized. Extraction
+rules:
 
 - **amount** - a labeled line (`Amount: CHF 12.50`, `Betrag: ...`) or the
   first `CHF 12.50` / `12.50 CHF` money value with a valid ISO 4217 code
   (pseudo-currencies like XXX are rejected so masked card numbers don't match)
 - **merchant** (stored as the description) - a labeled line
-  (`Merchant: ...`, `Händler: ...`) or the `... CHF 12.50 at Coffee Shop ...`
-  charge sentence
+  (`Merchant: ...`, `Händler: ...`), the `... CHF 12.50 at Coffee Shop ...`
+  charge sentence, or the sentence following
+  `CHF 12.50 have been charged to card "1234".` (UBS phrasing)
 - **date** - a labeled line (`Date: 04.08.2026 08:44`) or an `on 04.08.2026`
   sentence (interpreted in Europe/Zurich), falling back to the email's `Date`
   header
