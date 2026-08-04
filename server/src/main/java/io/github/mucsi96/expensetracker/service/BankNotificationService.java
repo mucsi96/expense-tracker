@@ -93,15 +93,13 @@ public class BankNotificationService {
 
   public void store(BankNotificationRequest request) {
     Email email = parse(request);
-    String html = email.html().orElseThrow(() -> new UnparseableBankNotificationException(
-        "No HTML part found in bank notification", request));
-
-    Matcher content = NOTIFICATION_CONTENT.matcher(html);
-    if (!content.find()) {
-      throw new UnparseableBankNotificationException(
-          "No NOTIFICATION_CONTENT markers found in bank notification", request);
-    }
-    String body = htmlToText(content.group(1));
+    String body = email.html()
+        .orElseThrow(() -> new UnparseableBankNotificationException(
+            "No HTML part found in bank notification", request))
+        .transform(html -> matchGroup(NOTIFICATION_CONTENT, html))
+        .map(BankNotificationService::htmlToText)
+        .orElseThrow(() -> new UnparseableBankNotificationException(
+            "No NOTIFICATION_CONTENT markers found in bank notification", request));
 
     ParsedAmount amount = findAmount(body)
         .or(() -> findAmount(Optional.ofNullable(request.subject()).orElse("")))
