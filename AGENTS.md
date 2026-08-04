@@ -146,10 +146,29 @@ not imported.
 
 A Cloudflare Email Worker receives bank card notification emails and forwards
 each one as JSON (`from`, `to`, `subject`, `raw`) to
-`POST /api/bank-notifications`. For now the endpoint only logs the
-notification to the console so the exact message format can be captured from
-the production logs; parsing it into an expense row will be implemented once
-the format is known.
+`POST /api/bank-notifications`. The endpoint parses the card debit
+notification into a "Card payment" expense. The plain-text part of the raw MIME message is
+decoded (quoted-printable/base64 transfer encodings, multipart/alternative)
+and the transaction is extracted from it; an email without a plain-text part
+is not recognized. Extraction rules:
+
+- **amount** - a labeled line (`Amount: CHF 12.50`, `Betrag: ...`) or the
+  first `CHF 12.50` / `12.50 CHF` money value with a valid ISO 4217 code
+  (pseudo-currencies like XXX are rejected so masked card numbers don't match)
+- **merchant** (stored as the description) - a labeled line
+  (`Merchant: ...`, `Händler: ...`) or the `... CHF 12.50 at Coffee Shop ...`
+  charge sentence
+- **date** - a labeled line (`Date: 04.08.2026 08:44`) or an `on 04.08.2026`
+  sentence (interpreted in Europe/Zurich), falling back to the email's `Date`
+  header
+
+Foreign amounts go through the usual currency conversion for the transaction
+date, and the regular duplicate detection (same day, description and whole
+amount) swallows redelivery of the same email. A notification where amount,
+merchant or date cannot be extracted is not recognized: it is logged as an
+error with all email details (from, to, subject and raw content, exactly what
+the endpoint logged before parsing existed) and rejected with 422 so the
+worker fails the delivery and the parser can be extended from the logs.
 
 The endpoint is not part of the Azure AD user flow; it has its own security
 filter chain that authenticates the worker with a static bearer token compared
