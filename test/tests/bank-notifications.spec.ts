@@ -25,7 +25,10 @@ const buildRaw = ({ amount = 'CHF 12.50', merchant = 'COFFEE SHOP Z=C3=9CRICH' }
     'Content-Transfer-Encoding: quoted-printable',
     '',
     '<html><head><style type=3D"text/css">body { margin:0; }</style></head>',
-    '<body><table><tr><td>Hello,<br><br>',
+    // Decoy money value outside the NOTIFICATION_CONTENT markers must not be
+    // picked up as the amount
+    '<body><div style=3D"display:none">Card debit - annual fee CHF 99.99</div>',
+    '<table><tr><td>Hello,<br><br>',
     '<!-- NOTIFICATION_CONTENT_BEGIN -->',
     `${amount} have been charged to card "4242". ${merchant}. Available amount:=`,
     ' CHF 7=E2=80=99317.38.',

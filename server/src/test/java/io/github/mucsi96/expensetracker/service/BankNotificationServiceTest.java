@@ -30,7 +30,9 @@ class BankNotificationServiceTest {
   // Same shape as the real card debit notification: multipart/mixed with a
   // quoted-printable HTML part carrying the transaction (soft line breaks
   // splitting the merchant name, ’ as =E2=80=99 in the balance) and a
-  // plain-text part holding only the legal disclaimer.
+  // plain-text part holding only the legal disclaimer. The decoy money value
+  // in the hidden preview sits outside the NOTIFICATION_CONTENT markers and
+  // must not be picked up as the amount.
   static final String RAW = String.join("\r\n",
       "Received: from mail.bank.example (203.0.113.10)",
       "        by email-forwarder.example (forwarder) id AbCdEf123456",
@@ -48,7 +50,7 @@ class BankNotificationServiceTest {
       "",
       "<html><head><style type=3D\"text/css\">body { margin:0; }</style></head>",
       "<body><div style=3D\"display:none\">Example Bank Digital Banking: Card deb=",
-      "it</div>",
+      "it - annual fee CHF 99.99</div>",
       "<table><tr><td>Hello,<br><br>",
       "<!-- NOTIFICATION_CONTENT_BEGIN -->",
       "CHF 7.00 have been charged to card \"7324\". Stra=",
@@ -92,6 +94,34 @@ class BankNotificationServiceTest {
     assertEquals("Expense", expense.getType());
     // No date in the body, so the email's Date header (17:37:23 +0200) is used
     assertEquals(Instant.parse("2026-08-04T15:37:23Z"), expense.getDate());
+  }
+
+  @Test
+  void extractsTransactionFromHtmlWithoutContentMarkers() {
+    when(expenseRepository.findAll()).thenReturn(List.of());
+
+    BankNotificationRequest noMarkers = new BankNotificationRequest(
+        REQUEST.from(), REQUEST.to(), REQUEST.subject(),
+        String.join("\r\n",
+            "Date: Tue, 4 Aug 2026 17:37:23 +0200",
+            "From: Example Bank <noreply-alerting@bank.example>",
+            "Subject: Example Bank Digital Banking: Card debit",
+            "MIME-Version: 1.0",
+            "Content-Type: text/html; charset=UTF-8",
+            "",
+            "<html><body><p>Date: 04.08.2026 08:44:12<br>Amount: CHF 12.50<br>",
+            "Merchant: COFFEE SHOP ZUERICH</p></body></html>",
+            ""));
+
+    bankNotificationService.store(noMarkers);
+
+    ArgumentCaptor<List<Expense>> captor = ArgumentCaptor.captor();
+    verify(expenseRepository).saveAll(captor.capture());
+    List<Expense> saved = captor.getValue();
+    assertEquals(1, saved.size());
+    assertEquals("COFFEE SHOP ZUERICH", saved.get(0).getDescription());
+    assertEquals(new BigDecimal("12.50"), saved.get(0).getAmount());
+    assertEquals(Instant.parse("2026-08-04T06:44:12Z"), saved.get(0).getDate());
   }
 
   @Test

@@ -153,8 +153,11 @@ multiparts), reduced to its text (tags stripped, `<br>`/block ends become
 line breaks, basic entities decoded) and the transaction is extracted from
 it. Plain-text parts are ignored — the banks' notifications carry the
 transaction only in HTML while their sole plain-text part is a legal
-disclaimer — so an email without an HTML part is not recognized. Extraction
-rules:
+disclaimer — so an email without an HTML part is not recognized. When the
+HTML brackets the notification between `<!-- NOTIFICATION_CONTENT_BEGIN -->`
+/ `<!-- NOTIFICATION_CONTENT_END -->` comment markers (as UBS does), only
+that region is considered, so money values in headers, previews or footers
+cannot shadow the transaction. Extraction rules:
 
 - **amount** - a labeled line (`Amount: CHF 12.50`, `Betrag: ...`) or the
   first `CHF 12.50` / `12.50 CHF` money value with a valid ISO 4217 code
