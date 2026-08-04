@@ -32,12 +32,20 @@ import lombok.extern.slf4j.Slf4j;
  * Turns a bank card debit notification email (forwarded by the Cloudflare
  * email worker) into a "Card payment" expense.
  *
- * The plain-text part of the raw MIME message is decoded (transfer encodings,
- * multipart) and the transaction is extracted from it:
+ * The HTML part of the raw MIME message is decoded (transfer encodings,
+ * multipart), reduced to its text and the transaction is extracted from it.
+ * Plain-text parts are ignored: the banks' notifications carry the
+ * transaction only in HTML, while their sole plain-text part is a legal
+ * disclaimer. The notification must be bracketed between
+ * NOTIFICATION_CONTENT_BEGIN/END comment markers (as UBS does); only that
+ * region is considered, so money values in headers, previews or footers
+ * cannot shadow the transaction, and HTML without the markers is not
+ * recognized. Extraction rules:
  * - amount: a labeled line ("Amount: CHF 12.50", "Betrag: ...") or the first
  *   "CHF 12.50" / "12.50 CHF" money value with a valid ISO 4217 code
  * - merchant: a labeled line ("Merchant: ...", "Händler: ...") or the
- *   "... CHF 12.50 at Coffee Shop ..." charge sentence
+ *   "... CHF 12.50 at Coffee Shop ..." charge sentence, or the sentence
+ *   following "CHF 12.50 have been charged to card "1234"."
  * - date: a labeled line ("Date: 04.08.2026 08:44") or the "on 04.08.2026"
  *   sentence, falling back to the email's Date header
  *
@@ -65,20 +73,33 @@ public class BankNotificationService {
       "(?im)^[ \\t]*(?:merchant|h(?:ä|ae)ndler|commer[cç]ant|esercente)[ \\t]*:[ \\t]*(.+?)[ \\t]*$");
   private static final Pattern SENTENCE_MERCHANT = Pattern.compile(
       "(?i)" + MONEY + "\\s+(?:at|bei|chez|presso)\\s+(.+?)(?=\\s+(?:on|am|le|il)\\s+\\d|\\s*[.;\\r\\n]|\\s*$)");
+  // UBS phrasing: the merchant is the sentence right after the charge
+  // sentence: >CHF 7.00 have been charged to card "7324". Strandbad Baumen
+  // Pfäffikon ZH CHE. Available amount: CHF 7'317.38.<
+  private static final Pattern CHARGED_CARD_MERCHANT = Pattern.compile(
+      "(?i)" + MONEY + "\\s+(?:has|have)\\s+been\\s+charged\\s+to\\s+(?:your\\s+)?card\\s+\"?[0-9Xx*]+\"?\\.\\s*"
+          + "(.+?)(?=\\s*\\.(?:\\s|$)|\\s*[;\\r\\n]|\\s*$)");
   private static final Pattern DATE_LABEL = Pattern.compile(
       "(?im)^[ \\t]*(?:(?:transaction |purchase )?date|datum|data)[ \\t]*:[ \\t]*(.+)$");
   private static final Pattern SENTENCE_DATE = Pattern.compile(
       "(?i)\\b(?:on|am|le|il|vom)\\s+(" + DATE + ")");
   private static final Pattern DATE_VALUE = Pattern.compile(
       "(\\d{2}\\.\\d{2}\\.\\d{4}|\\d{4}-\\d{2}-\\d{2})(?:[\\sT,]+(?:at\\s+|um\\s+)?(\\d{2}:\\d{2}(?::\\d{2})?))?");
+  private static final Pattern NOTIFICATION_CONTENT = Pattern.compile(
+      "(?s)<!--\\s*NOTIFICATION_CONTENT_BEGIN\\s*-->(.*?)<!--\\s*NOTIFICATION_CONTENT_END\\s*-->");
 
   private final CurrencyConversionService currencyConversionService;
   private final ExpenseService expenseService;
 
   public void store(BankNotificationRequest request) {
     Email email = parse(request);
-    String body = email.body().orElseThrow(() -> new UnparseableBankNotificationException(
-        "No plain-text part found in bank notification", request));
+    String body = email.html()
+        .orElseThrow(() -> new UnparseableBankNotificationException(
+            "No HTML part found in bank notification", request))
+        .transform(html -> matchGroup(NOTIFICATION_CONTENT, html))
+        .map(BankNotificationService::htmlToText)
+        .orElseThrow(() -> new UnparseableBankNotificationException(
+            "No NOTIFICATION_CONTENT markers found in bank notification", request));
 
     ParsedAmount amount = findAmount(body)
         .or(() -> findAmount(Optional.ofNullable(request.subject()).orElse("")))
@@ -117,7 +138,7 @@ public class BankNotificationService {
         transactionTime, imported == 0 ? "duplicate, skipped" : "stored");
   }
 
-  private record Email(Optional<Date> sentDate, Optional<String> body) {
+  private record Email(Optional<Date> sentDate, Optional<String> html) {
   }
 
   private record ParsedAmount(BigDecimal value, String currency) {
@@ -128,23 +149,23 @@ public class BankNotificationService {
       MimeMessage message = new MimeMessage(Session.getInstance(new Properties()),
           new ByteArrayInputStream(request.raw().getBytes(StandardCharsets.UTF_8)));
       return new Email(Optional.ofNullable(message.getSentDate()),
-          Optional.ofNullable(findPlainText(message)));
+          Optional.ofNullable(findHtml(message)));
     } catch (Exception e) {
       throw new UnparseableBankNotificationException(
           "Bank notification is not a readable MIME message (%s)".formatted(e), request);
     }
   }
 
-  private static String findPlainText(Part part) {
+  private static String findHtml(Part part) {
     try {
-      if (part.isMimeType("text/plain") && part.getContent() instanceof String text) {
-        return text;
+      if (part.isMimeType("text/html") && part.getContent() instanceof String html) {
+        return html;
       }
       if (part.getContent() instanceof Multipart multipart) {
         for (int i = 0; i < multipart.getCount(); i++) {
-          String text = findPlainText(multipart.getBodyPart(i));
-          if (text != null) {
-            return text;
+          String html = findHtml(multipart.getBodyPart(i));
+          if (html != null) {
+            return html;
           }
         }
       }
@@ -152,6 +173,24 @@ public class BankNotificationService {
     } catch (Exception e) {
       return null;
     }
+  }
+
+  private static String htmlToText(String html) {
+    return html
+        .replaceAll("(?is)<(style|script|head)\\b[^>]*>.*?</\\1>", " ")
+        .replaceAll("(?s)<!--.*?-->", " ")
+        .replaceAll("(?i)<br[^>]*>", "\n")
+        .replaceAll("(?i)</(?:p|div|li|td|th|tr|table|h[1-6]|blockquote)>", "\n")
+        .replaceAll("<[^>]+>", " ")
+        .replace("&nbsp;", " ")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&amp;", "&")
+        .replaceAll("[ \\t]+", " ")
+        .replaceAll(" ?\\n ?", "\n")
+        .trim();
   }
 
   private static Optional<ParsedAmount> findAmount(String text) {
@@ -193,6 +232,7 @@ public class BankNotificationService {
   private static Optional<String> findMerchant(String text) {
     return matchGroup(MERCHANT_LABEL, text)
         .or(() -> matchGroup(SENTENCE_MERCHANT, text))
+        .or(() -> matchGroup(CHARGED_CARD_MERCHANT, text))
         .filter(merchant -> !merchant.isBlank());
   }
 
