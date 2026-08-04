@@ -97,9 +97,9 @@ class BankNotificationServiceTest {
   }
 
   @Test
-  void extractsTransactionFromHtmlWithoutContentMarkers() {
-    when(expenseRepository.findAll()).thenReturn(List.of());
-
+  void rejectsHtmlWithoutContentMarkers() {
+    // The transaction data is complete, but not bracketed between the
+    // NOTIFICATION_CONTENT markers
     BankNotificationRequest noMarkers = new BankNotificationRequest(
         REQUEST.from(), REQUEST.to(), REQUEST.subject(),
         String.join("\r\n",
@@ -113,15 +113,8 @@ class BankNotificationServiceTest {
             "Merchant: COFFEE SHOP ZUERICH</p></body></html>",
             ""));
 
-    bankNotificationService.store(noMarkers);
-
-    ArgumentCaptor<List<Expense>> captor = ArgumentCaptor.captor();
-    verify(expenseRepository).saveAll(captor.capture());
-    List<Expense> saved = captor.getValue();
-    assertEquals(1, saved.size());
-    assertEquals("COFFEE SHOP ZUERICH", saved.get(0).getDescription());
-    assertEquals(new BigDecimal("12.50"), saved.get(0).getAmount());
-    assertEquals(Instant.parse("2026-08-04T06:44:12Z"), saved.get(0).getDate());
+    assertThrows(UnparseableBankNotificationException.class,
+        () -> bankNotificationService.store(noMarkers));
   }
 
   @Test

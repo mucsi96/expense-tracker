@@ -36,10 +36,11 @@ import lombok.extern.slf4j.Slf4j;
  * multipart), reduced to its text and the transaction is extracted from it.
  * Plain-text parts are ignored: the banks' notifications carry the
  * transaction only in HTML, while their sole plain-text part is a legal
- * disclaimer. When the HTML brackets the notification between
- * NOTIFICATION_CONTENT_BEGIN/END comment markers (as UBS does), only that
+ * disclaimer. The notification must be bracketed between
+ * NOTIFICATION_CONTENT_BEGIN/END comment markers (as UBS does); only that
  * region is considered, so money values in headers, previews or footers
- * cannot shadow the transaction. Extraction rules:
+ * cannot shadow the transaction, and HTML without the markers is not
+ * recognized. Extraction rules:
  * - amount: a labeled line ("Amount: CHF 12.50", "Betrag: ...") or the first
  *   "CHF 12.50" / "12.50 CHF" money value with a valid ISO 4217 code
  * - merchant: a labeled line ("Merchant: ...", "Händler: ...") or the
@@ -92,8 +93,15 @@ public class BankNotificationService {
 
   public void store(BankNotificationRequest request) {
     Email email = parse(request);
-    String body = email.body().orElseThrow(() -> new UnparseableBankNotificationException(
+    String html = email.html().orElseThrow(() -> new UnparseableBankNotificationException(
         "No HTML part found in bank notification", request));
+
+    Matcher content = NOTIFICATION_CONTENT.matcher(html);
+    if (!content.find()) {
+      throw new UnparseableBankNotificationException(
+          "No NOTIFICATION_CONTENT markers found in bank notification", request);
+    }
+    String body = htmlToText(content.group(1));
 
     ParsedAmount amount = findAmount(body)
         .or(() -> findAmount(Optional.ofNullable(request.subject()).orElse("")))
@@ -132,7 +140,7 @@ public class BankNotificationService {
         transactionTime, imported == 0 ? "duplicate, skipped" : "stored");
   }
 
-  private record Email(Optional<Date> sentDate, Optional<String> body) {
+  private record Email(Optional<Date> sentDate, Optional<String> html) {
   }
 
   private record ParsedAmount(BigDecimal value, String currency) {
@@ -143,9 +151,7 @@ public class BankNotificationService {
       MimeMessage message = new MimeMessage(Session.getInstance(new Properties()),
           new ByteArrayInputStream(request.raw().getBytes(StandardCharsets.UTF_8)));
       return new Email(Optional.ofNullable(message.getSentDate()),
-          Optional.ofNullable(findHtml(message))
-              .map(BankNotificationService::notificationContent)
-              .map(BankNotificationService::htmlToText));
+          Optional.ofNullable(findHtml(message)));
     } catch (Exception e) {
       throw new UnparseableBankNotificationException(
           "Bank notification is not a readable MIME message (%s)".formatted(e), request);
@@ -169,11 +175,6 @@ public class BankNotificationService {
     } catch (Exception e) {
       return null;
     }
-  }
-
-  private static String notificationContent(String html) {
-    Matcher matcher = NOTIFICATION_CONTENT.matcher(html);
-    return matcher.find() ? matcher.group(1) : html;
   }
 
   private static String htmlToText(String html) {

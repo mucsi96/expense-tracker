@@ -155,6 +155,29 @@ test('rejects notification without an HTML part', async ({ request }) => {
   expect(await getExpenses()).toHaveLength(0);
 });
 
+test('rejects notification without NOTIFICATION_CONTENT markers', async ({ request }) => {
+  // The transaction data is complete, but not bracketed between the
+  // NOTIFICATION_CONTENT markers
+  const response = await request.post('/api/bank-notifications', {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...notification,
+      raw: [
+        'Date: Tue, 4 Aug 2026 08:44:31 +0200',
+        'From: Example Bank <noreply-alerting@bank.example>',
+        'Subject: Example Bank Digital Banking: Card debit',
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=UTF-8',
+        '',
+        '<html><body><p>CHF 12.50 have been charged to card "4242". COFFEE SHOP ZUERICH.</p></body></html>',
+      ].join('\r\n'),
+    },
+  });
+
+  expect(response.status()).toBe(422);
+  expect(await getExpenses()).toHaveLength(0);
+});
+
 test('rejects bank notification without token', async ({ request }) => {
   const response = await request.post('/api/bank-notifications', {
     data: notification,
