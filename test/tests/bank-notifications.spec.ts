@@ -4,25 +4,146 @@ import { cleanupDb, getExpenses } from '../utils';
 // Matches bank-notification-token in application-test.yml
 const token = 'test-bank-notification-token';
 
+// Same shape as a real card debit notification (multipart/alternative with a
+// quoted-printable plain-text part), but with a fake bank, addresses and card
+// number throughout.
+const buildRaw = ({ amount = 'CHF 12.50', merchant = 'COFFEE SHOP Z=C3=9CRICH' } = {}) =>
+  [
+    'Received: from mail.bank.example (203.0.113.10)',
+    '        by email-forwarder.example (forwarder) id AbCdEf123456',
+    '        for <expenses@user.example>; Tue, 04 Aug 2026 06:44:32 +0000',
+    'Date: Tue, 4 Aug 2026 08:44:31 +0200',
+    'From: Example Bank <noreply-alerting@bank.example>',
+    'To: expenses@user.example',
+    'Subject: Example Bank Digital Banking: Card debit',
+    'MIME-Version: 1.0',
+    'Content-Type: multipart/alternative; boundary="----=_notification"',
+    '',
+    '------=_notification',
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: quoted-printable',
+    '',
+    'Good day',
+    '',
+    'We would like to inform you about the following card transaction:',
+    '',
+    'Card number: 4242 42XX XXXX 4242',
+    'Date: 04.08.2026 08:44:12',
+    `Amount: ${amount}`,
+    `Merchant: ${merchant}`,
+    '',
+    'Yours sincerely',
+    'Example Bank AG',
+    '------=_notification',
+    'Content-Type: text/html; charset=UTF-8',
+    '',
+    `<html><body><p>Amount: ${amount}</p></body></html>`,
+    '------=_notification--',
+  ].join('\r\n');
+
 const notification = {
-  from: 'notify@bank.example',
-  to: 'expenses@example.com',
-  subject: 'Card payment at Coffee Shop',
-  raw: 'From: notify@bank.example\r\n\r\nYour card was charged CHF 12.50 at Coffee Shop.',
+  from: 'noreply-alerting@bank.example',
+  to: 'expenses@user.example',
+  subject: 'Example Bank Digital Banking: Card debit',
+  raw: buildRaw(),
 };
 
 test.beforeEach(async () => {
   await cleanupDb();
 });
 
-test('accepts bank notification posted with the worker token', async ({ request }) => {
+test('stores bank notification as card payment expense', async ({ request }) => {
   const response = await request.post('/api/bank-notifications', {
     headers: { Authorization: `Bearer ${token}` },
     data: notification,
   });
 
   expect(response.status()).toBe(204);
-  // The notification is only logged for now, nothing is stored
+
+  const expenses = await getExpenses();
+  expect(expenses).toHaveLength(1);
+  expect(expenses[0]).toMatchObject({
+    // Quoted-printable =C3=9C decoded to Ü
+    description: 'COFFEE SHOP ZÜRICH',
+    // numeric(19, 4) columns come back from pg as strings
+    amount: '12.5000',
+    currency: 'CHF',
+    converted_amount: '12.5000',
+    base_currency: 'CHF',
+    method: 'Card payment',
+    type: 'Expense',
+  });
+  // 04.08.2026 08:44:12 Europe/Zurich
+  expect(new Date(expenses[0].expense_date).toISOString()).toBe('2026-08-04T06:44:12.000Z');
+});
+
+test('converts foreign amounts to the base currency', async ({ request }) => {
+  const response = await request.post('/api/bank-notifications', {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...notification,
+      raw: buildRaw({ amount: 'EUR 100.00', merchant: 'ARAL STATION PASSAU' }),
+    },
+  });
+
+  expect(response.status()).toBe(204);
+
+  const expenses = await getExpenses();
+  expect(expenses).toHaveLength(1);
+  expect(expenses[0]).toMatchObject({
+    description: 'ARAL STATION PASSAU',
+    amount: '100.0000',
+    currency: 'EUR',
+    // EUR -> CHF at the mock exchange rate server's 0.95
+    converted_amount: '95.0000',
+    base_currency: 'CHF',
+  });
+});
+
+test('skips redelivery of the same notification as duplicate', async ({ request }) => {
+  for (let i = 0; i < 2; i++) {
+    const response = await request.post('/api/bank-notifications', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: notification,
+    });
+    expect(response.status()).toBe(204);
+  }
+
+  expect(await getExpenses()).toHaveLength(1);
+});
+
+test('rejects notification in unrecognized format without storing', async ({ request }) => {
+  const response = await request.post('/api/bank-notifications', {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...notification,
+      subject: 'Example Bank Digital Banking: Security alert',
+      raw: 'Date: Tue, 4 Aug 2026 08:44:31 +0200\r\nFrom: Example Bank <noreply-alerting@bank.example>\r\n\r\nYour one-time code is 123456.',
+    },
+  });
+
+  expect(response.status()).toBe(422);
+  expect(await getExpenses()).toHaveLength(0);
+});
+
+test('rejects notification without a plain-text part', async ({ request }) => {
+  const response = await request.post('/api/bank-notifications', {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...notification,
+      raw: [
+        'Date: Tue, 4 Aug 2026 08:44:31 +0200',
+        'From: Example Bank <noreply-alerting@bank.example>',
+        'Subject: Example Bank Digital Banking: Card debit',
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=UTF-8',
+        '',
+        '<html><body><p>Date: 04.08.2026 08:44:12<br>Amount: CHF 12.50<br>Merchant: COFFEE SHOP ZUERICH</p></body></html>',
+      ].join('\r\n'),
+    },
+  });
+
+  expect(response.status()).toBe(422);
   expect(await getExpenses()).toHaveLength(0);
 });
 
@@ -32,6 +153,7 @@ test('rejects bank notification without token', async ({ request }) => {
   });
 
   expect(response.status()).toBe(401);
+  expect(await getExpenses()).toHaveLength(0);
 });
 
 test('rejects bank notification with wrong token', async ({ request }) => {
