@@ -1,9 +1,18 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import {
+  MatBottomSheet,
+  MatBottomSheetModule,
+} from '@angular/material/bottom-sheet';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { BarLoaderComponent } from '@mucsi96/angular-material-theme';
+import { firstValueFrom } from 'rxjs';
+import {
+  BarLoaderComponent,
+  NotificationsService,
+} from '@mucsi96/angular-material-theme';
 import { Expense, ExpenseService } from '../expense.service';
 import { MonthlyCategoryChartComponent } from '../monthly-category-chart/monthly-category-chart.component';
 import { currentMonthKey, toMonthKey, toMonthLabel } from '../utils/month';
+import { CategoryPickerSheetComponent } from './category-picker-sheet.component';
 
 type ExpenseDay = {
   day: string;
@@ -53,6 +62,7 @@ const isForeign = (expense: Expense): boolean =>
   standalone: true,
   imports: [
     BarLoaderComponent,
+    MatBottomSheetModule,
     MatButtonToggleModule,
     MonthlyCategoryChartComponent,
   ],
@@ -61,6 +71,8 @@ const isForeign = (expense: Expense): boolean =>
 })
 export class HomeComponent {
   private readonly expenseService = inject(ExpenseService);
+  private readonly notifications = inject(NotificationsService);
+  private readonly bottomSheet = inject(MatBottomSheet);
   readonly expenses = this.expenseService.expenses;
 
   // 'all' or a 'yyyy-MM' month key; only the current month is listed by default
@@ -108,5 +120,24 @@ export class HomeComponent {
     return isForeign(expense) && expense.amount != null
       ? `${expense.amount.toFixed(2)} ${expense.currency}`
       : '';
+  }
+
+  categoryLabel(expense: Expense): string {
+    return expense.category || 'Uncategorized';
+  }
+
+  async changeCategory(expense: Expense): Promise<void> {
+    const category = await firstValueFrom(
+      this.bottomSheet.open(CategoryPickerSheetComponent).afterDismissed()
+    );
+    if (!category || category === expense.category) {
+      return;
+    }
+
+    try {
+      await this.expenseService.setCategory(expense.id, category);
+    } catch {
+      this.notifications.error('Failed to update category');
+    }
   }
 }

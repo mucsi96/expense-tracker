@@ -73,6 +73,28 @@
 .expense-meta {
   color: var(--bt-text-muted);
   font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Compact pill; the ::before overlay stretches the tap area to >=44px
+   without growing the list row */
+.category-chip {
+  position: relative;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid var(--bt-outline);
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  cursor: pointer;
+}
+
+.category-chip::before {
+  content: '';
+  position: absolute;
+  inset: -0.75rem 0;
 }
 
 .expense-amounts {

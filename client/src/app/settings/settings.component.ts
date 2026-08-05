@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { NotificationsService } from '@mucsi96/angular-material-theme';
 import { ExpenseService } from '../expense.service';
@@ -8,7 +9,7 @@ import { CleanupConfirmationDialogComponent } from './cleanup-confirmation-dialo
 
 @Component({
   selector: 'app-settings',
-  imports: [MatButtonModule, MatDialogModule],
+  imports: [MatButtonModule, MatDialogModule, RouterLink],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.css',
 })
