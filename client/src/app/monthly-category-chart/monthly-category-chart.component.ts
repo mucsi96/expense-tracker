@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { EChartsOption } from 'echarts';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { Expense, ExpenseService } from '../expense.service';
+import { toMonthKey, toMonthLabel } from '../utils/month';
 
 const TEXT_COLOR = 'hsl(220, 13%, 91%)';
 const MUTED_COLOR = 'hsl(217, 10%, 64%)';
@@ -12,19 +13,6 @@ type MonthlySpending = {
   categories: string[];
   totals: ReadonlyMap<string, number>;
 };
-
-function toMonthKey(date: string): string {
-  return date.slice(0, 7);
-}
-
-function toMonthLabel(monthKey: string): string {
-  const [year, month] = monthKey.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1)).toLocaleDateString('en-US', {
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-}
 
 function computeMonthlySpending(expenses: Expense[]): MonthlySpending {
   const spendings = expenses.filter(

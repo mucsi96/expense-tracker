@@ -52,11 +52,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-csv</artifactId>
-      <version>1.14.1</version>
-    </dependency>
     <!-- MIME parsing of bank notification emails (quoted-printable, base64, multipart) -->
     <dependency>
       <groupId>jakarta.mail</groupId>

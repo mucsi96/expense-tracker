@@ -18,29 +18,10 @@
   }
 }
 
-.dropzone {
-  position: relative;
-  border: 2px dashed transparent;
-  border-radius: 8px;
-}
-
-.dropzone.drag-over {
-  border-color: hsl(220, 89%, 53%);
-}
-
-.drop-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: hsla(220, 89%, 53%, 0.15);
-  border-radius: 8px;
-  color: var(--bt-text-strong);
-  font-size: 1.25rem;
-  font-weight: 500;
-  pointer-events: none;
-  z-index: 1;
+.month-filter {
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
 }
 
 .day-group {

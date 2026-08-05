@@ -1,16 +1,19 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import {
-  BarLoaderComponent,
-  NotificationsService,
-} from '@mucsi96/angular-material-theme';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { BarLoaderComponent } from '@mucsi96/angular-material-theme';
 import { Expense, ExpenseService } from '../expense.service';
 import { MonthlyCategoryChartComponent } from '../monthly-category-chart/monthly-category-chart.component';
+import { currentMonthKey, toMonthKey, toMonthLabel } from '../utils/month';
 
 type ExpenseDay = {
   day: string;
   label: string;
   expenses: Expense[];
+};
+
+type MonthOption = {
+  key: string;
+  label: string;
 };
 
 const toDayKey = (expense: Expense): string => expense.date?.slice(0, 10) ?? '';
@@ -48,20 +51,43 @@ const isForeign = (expense: Expense): boolean =>
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [BarLoaderComponent, MatButtonModule, MonthlyCategoryChartComponent],
+  imports: [
+    BarLoaderComponent,
+    MatButtonToggleModule,
+    MonthlyCategoryChartComponent,
+  ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
 export class HomeComponent {
   private readonly expenseService = inject(ExpenseService);
-  private readonly notifications = inject(NotificationsService);
   readonly expenses = this.expenseService.expenses;
-  readonly uploading = signal(false);
-  readonly dragOver = signal(false);
 
-  readonly days = computed<ExpenseDay[]>(() =>
-    groupByDay(this.expenses.value() ?? [])
-  );
+  // 'all' or a 'yyyy-MM' month key; only the current month is listed by default
+  readonly selectedMonth = signal<string>(currentMonthKey());
+
+  readonly monthOptions = computed<MonthOption[]>(() => {
+    const monthKeys = (this.expenses.value() ?? []).flatMap((expense) =>
+      expense.date ? [toMonthKey(expense.date)] : []
+    );
+    return [...new Set([currentMonthKey(), ...monthKeys])]
+      .sort((a, b) => b.localeCompare(a))
+      .map((key) => ({ key, label: toMonthLabel(key) }));
+  });
+
+  readonly days = computed<ExpenseDay[]>(() => {
+    const month = this.selectedMonth();
+    const expenses = (this.expenses.value() ?? []).filter(
+      (expense) =>
+        month === 'all' || (expense.date && toMonthKey(expense.date) === month)
+    );
+    return groupByDay(expenses);
+  });
+
+  readonly selectedMonthLabel = computed(() => {
+    const month = this.selectedMonth();
+    return month === 'all' ? 'any month' : toMonthLabel(month);
+  });
 
   isIncome(expense: Expense): boolean {
     return expense.type === 'Income';
@@ -82,67 +108,5 @@ export class HomeComponent {
     return isForeign(expense) && expense.amount != null
       ? `${expense.amount.toFixed(2)} ${expense.currency}`
       : '';
-  }
-
-  onFileInputChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
-    input.value = '';
-    void this.importFiles(files);
-  }
-
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    this.dragOver.set(true);
-  }
-
-  onDragLeave(event: DragEvent): void {
-    // dragleave also fires when moving onto a child of the dropzone
-    const dropzone = event.currentTarget as HTMLElement;
-    if (event.relatedTarget && dropzone.contains(event.relatedTarget as Node)) {
-      return;
-    }
-    this.dragOver.set(false);
-  }
-
-  async onDrop(event: DragEvent): Promise<void> {
-    event.preventDefault();
-    this.dragOver.set(false);
-    await this.importFiles(Array.from(event.dataTransfer?.files ?? []));
-  }
-
-  private async importFiles(files: File[]): Promise<void> {
-    if (!files.length) {
-      return;
-    }
-
-    const csvFiles = files.filter((file) =>
-      file.name.toLowerCase().endsWith('.csv')
-    );
-    if (!csvFiles.length) {
-      this.notifications.error('Only CSV statements are supported');
-      return;
-    }
-
-    this.uploading.set(true);
-    try {
-      // Sequential so server-side duplicate detection sees earlier imports
-      for (const file of csvFiles) {
-        await this.uploadFile(file);
-      }
-    } finally {
-      this.uploading.set(false);
-    }
-  }
-
-  private async uploadFile(file: File): Promise<void> {
-    try {
-      const response = await this.expenseService.uploadStatement(file);
-      this.notifications.success(
-        `${response.importedCount} expense(s) imported from ${file.name}`
-      );
-    } catch {
-      this.notifications.error(`Failed to import ${file.name}`);
-    }
   }
 }
