@@ -86,3 +86,16 @@ databaseChangeLog:
               INSERT INTO expensetracker.categories (name)
               SELECT DISTINCT category FROM expensetracker.expenses
               WHERE category IS NOT NULL AND category <> ''
+  - changeSet:
+      id: 4-add-category-emoji-and-description
+      author: mucsi96
+      changes:
+        - addColumn:
+            tableName: categories
+            columns:
+              - column:
+                  name: emoji
+                  type: text
+              - column:
+                  name: description
+                  type: text

@@ -108,10 +108,11 @@ cd test && npx playwright test --ui  # Interactive test runner
 - `PUT /api/expenses/{id}/category` - Assign an existing category to an
   expense (authenticated; unknown categories are rejected with 422)
 - `GET /api/categories` - List categories sorted by name (authenticated)
-- `POST /api/categories` - Create a category (authenticated; duplicate names
-  are rejected with 409)
-- `PUT /api/categories/{id}` - Rename a category and update all expenses
-  using the old name (authenticated)
+- `POST /api/categories` - Create a category with optional emoji and
+  description (authenticated; duplicate names are rejected with 409)
+- `PUT /api/categories/{id}` - Update a category's name, emoji and
+  description; renaming updates all expenses using the old name
+  (authenticated)
 - `DELETE /api/categories/{id}` - Delete a category; expenses keep their
   category text (authenticated)
 - `POST /api/bank-notifications` - Receive a bank card notification email from
@@ -121,11 +122,14 @@ cd test && npx playwright test --ui  # Interactive test runner
 
 - **expenses** - Stores expenses (date, description, location, category,
   amount, currency, converted_amount, base_currency, method, type, comment)
-- **categories** - Stores the category names offered when assigning
-  transactions (name, unique). Expenses reference categories by name, not by
-  foreign key; renaming a category rewrites the name on its expenses. The
-  table is managed on the mobile-first `/settings/categories` route, and the
-  home route assigns a category to a transaction via a bottom sheet.
+- **categories** - Stores the categories offered when assigning transactions
+  (name unique, optional emoji and description; blank emoji/description are
+  stored as null). Expenses reference categories by name, not by foreign key;
+  renaming a category rewrites the name on its expenses. The table is managed
+  on the mobile-first `/settings/categories` route, and the home route
+  assigns a category to a transaction via a bottom sheet. The home list shows
+  the category's emoji on the transaction chip and its description as a
+  tooltip; the picker sheet shows both.
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).

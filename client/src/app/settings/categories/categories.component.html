@@ -7,13 +7,33 @@
 <bt-bar-loader class="page-loading" label="Loading categories" />
 } @else {
 <form class="add-form" (ngSubmit)="addCategory()">
-  <mat-form-field class="name-field" subscriptSizing="dynamic">
-    <mat-label>New category</mat-label>
+  <div class="field-row">
+    <mat-form-field class="emoji-field" subscriptSizing="dynamic">
+      <mat-label>Emoji</mat-label>
+      <input
+        matInput
+        name="emoji"
+        [ngModel]="newCategoryEmoji()"
+        (ngModelChange)="newCategoryEmoji.set($event)"
+      />
+    </mat-form-field>
+    <mat-form-field class="name-field" subscriptSizing="dynamic">
+      <mat-label>New category</mat-label>
+      <input
+        matInput
+        name="name"
+        [ngModel]="newCategoryName()"
+        (ngModelChange)="newCategoryName.set($event)"
+      />
+    </mat-form-field>
+  </div>
+  <mat-form-field class="description-field" subscriptSizing="dynamic">
+    <mat-label>Description</mat-label>
     <input
       matInput
-      name="name"
-      [ngModel]="newCategoryName()"
-      (ngModelChange)="newCategoryName.set($event)"
+      name="description"
+      [ngModel]="newCategoryDescription()"
+      (ngModelChange)="newCategoryDescription.set($event)"
     />
   </mat-form-field>
   <button
@@ -28,12 +48,24 @@
 <ul class="category-list">
   @for (category of categories.value() ?? []; track category.id) {
   <li class="category-item">
-    <span class="category-name">{{ category.name }}</span>
+    <span class="category-info">
+      <span class="category-name">
+        @if (category.emoji) {
+        <span class="category-emoji" aria-hidden="true">{{
+          category.emoji
+        }}</span>
+        }
+        {{ category.name }}
+      </span>
+      @if (category.description) {
+      <span class="category-description">{{ category.description }}</span>
+      }
+    </span>
     <span class="category-actions">
       <button
         mat-icon-button
-        [attr.aria-label]="'Rename ' + category.name"
-        (click)="renameCategory(category)"
+        [attr.aria-label]="'Edit ' + category.name"
+        (click)="editCategory(category)"
       >
         <mat-icon>edit</mat-icon>
       </button>

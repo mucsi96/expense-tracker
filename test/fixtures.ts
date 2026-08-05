@@ -8,7 +8,7 @@ export const test = base.extend({
     await cleanupDb();
     await insertExpense('2026-07-01T10:00:00Z', 'Migros Zurich', 'Groceries', 42.5, 'CHF', 'Card payment', 'Expense');
     await insertExpense('2026-07-03T10:00:00Z', 'SBB Ticket', 'Transport', 12.8, 'CHF', 'Direct payment', 'Expense');
-    await insertCategory('Groceries');
+    await insertCategory('Groceries', '🛒', 'Migros, Coop, Aldi, Lidl');
     await insertCategory('Transport');
     await insertCategory('Restaurants');
 

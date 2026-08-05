@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import io.github.mucsi96.expensetracker.entity.Category;
+import io.github.mucsi96.expensetracker.model.CategoryRequest;
 import io.github.mucsi96.expensetracker.model.CategoryResponse;
 import io.github.mucsi96.expensetracker.repository.CategoryRepository;
 import io.github.mucsi96.expensetracker.repository.ExpenseRepository;
@@ -26,21 +27,27 @@ public class CategoryService {
   }
 
   @Transactional
-  public CategoryResponse createCategory(String name) {
-    String validName = requireValidName(name);
+  public CategoryResponse createCategory(CategoryRequest request) {
+    String validName = requireValidName(request.name());
     requireAvailableName(validName);
-    return toResponse(categoryRepository.save(Category.builder().name(validName).build()));
+    return toResponse(categoryRepository.save(Category.builder()
+        .name(validName)
+        .emoji(normalize(request.emoji()))
+        .description(normalize(request.description()))
+        .build()));
   }
 
   @Transactional
-  public CategoryResponse renameCategory(Long id, String name) {
+  public CategoryResponse updateCategory(Long id, CategoryRequest request) {
     Category category = requireCategory(id);
-    String validName = requireValidName(name);
+    String validName = requireValidName(request.name());
     if (!validName.equals(category.getName())) {
       requireAvailableName(validName);
       expenseRepository.updateCategoryName(category.getName(), validName);
       category.setName(validName);
     }
+    category.setEmoji(normalize(request.emoji()));
+    category.setDescription(normalize(request.description()));
     return toResponse(category);
   }
 
@@ -67,7 +74,12 @@ public class CategoryService {
     return name.trim();
   }
 
+  private static String normalize(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
+  }
+
   private static CategoryResponse toResponse(Category category) {
-    return new CategoryResponse(category.getId(), category.getName());
+    return new CategoryResponse(category.getId(), category.getName(), category.getEmoji(),
+        category.getDescription());
   }
 }

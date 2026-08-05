@@ -97,6 +97,10 @@
   inset: -0.75rem 0;
 }
 
+.category-emoji {
+  margin-right: 0.25rem;
+}
+
 .expense-amounts {
   display: flex;
   flex-direction: column;

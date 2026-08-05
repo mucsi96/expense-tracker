@@ -4,11 +4,13 @@ import {
   MatBottomSheetModule,
 } from '@angular/material/bottom-sheet';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import {
   BarLoaderComponent,
   NotificationsService,
 } from '@mucsi96/angular-material-theme';
+import { Category, CategoryService } from '../category.service';
 import { Expense, ExpenseService } from '../expense.service';
 import { MonthlyCategoryChartComponent } from '../monthly-category-chart/monthly-category-chart.component';
 import { currentMonthKey, toMonthKey, toMonthLabel } from '../utils/month';
@@ -64,6 +66,7 @@ const isForeign = (expense: Expense): boolean =>
     BarLoaderComponent,
     MatBottomSheetModule,
     MatButtonToggleModule,
+    MatTooltipModule,
     MonthlyCategoryChartComponent,
   ],
   templateUrl: './home.component.html',
@@ -71,9 +74,20 @@ const isForeign = (expense: Expense): boolean =>
 })
 export class HomeComponent {
   private readonly expenseService = inject(ExpenseService);
+  private readonly categoryService = inject(CategoryService);
   private readonly notifications = inject(NotificationsService);
   private readonly bottomSheet = inject(MatBottomSheet);
   readonly expenses = this.expenseService.expenses;
+
+  private readonly categoriesByName = computed<Map<string, Category>>(
+    () =>
+      new Map(
+        (this.categoryService.categories.value() ?? []).map((category) => [
+          category.name,
+          category,
+        ])
+      )
+  );
 
   // 'all' or a 'yyyy-MM' month key; only the current month is listed by default
   readonly selectedMonth = signal<string>(currentMonthKey());
@@ -124,6 +138,14 @@ export class HomeComponent {
 
   categoryLabel(expense: Expense): string {
     return expense.category || 'Uncategorized';
+  }
+
+  categoryEmoji(expense: Expense): string {
+    return this.categoriesByName().get(expense.category)?.emoji ?? '';
+  }
+
+  categoryDescription(expense: Expense): string {
+    return this.categoriesByName().get(expense.category)?.description ?? '';
   }
 
   async changeCategory(expense: Expense): Promise<void> {

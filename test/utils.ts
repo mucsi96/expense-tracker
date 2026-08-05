@@ -22,10 +22,15 @@ export async function cleanupDb() {
   await query('DELETE FROM expensetracker.categories');
 }
 
-export async function insertCategory(name: string) {
-  await query('INSERT INTO expensetracker.categories (name) VALUES ($1)', [
-    name,
-  ]);
+export async function insertCategory(
+  name: string,
+  emoji: string | null = null,
+  description: string | null = null
+) {
+  await query(
+    'INSERT INTO expensetracker.categories (name, emoji, description) VALUES ($1, $2, $3)',
+    [name, emoji, description]
+  );
 }
 
 export async function getCategories() {
