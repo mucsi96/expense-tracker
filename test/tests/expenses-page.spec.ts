@@ -115,6 +115,38 @@ test('shows converted amount for foreign currency expenses', async ({ page }) =>
   await expect(lidl).toContainText('20.00 EUR');
 });
 
+test('shows total spend next to the month filter', async ({ page }) => {
+  await page.goto('/');
+  await selectMonth(page, 'Jul 2026');
+
+  // 42.50 (Migros Zurich) + 12.80 (SBB Ticket)
+  await expect(page.getByText('Spent 55.30 CHF')).toBeVisible();
+});
+
+test('total spend follows the selected range and excludes income', async ({ page }) => {
+  await insertExpense('2026-06-15T10:00:00Z', 'Alps Hotel', 'Travel', 250, 'CHF', 'Card payment', 'Expense');
+  await insertExpense('2026-07-12T10:00:00Z', 'Tax Refund', 'Taxes', 150, 'CHF', 'Direct payment', 'Income');
+  await page.goto('/');
+
+  await selectMonth(page, 'Jun 2026');
+  await expect(page.getByText('Spent 250.00 CHF')).toBeVisible();
+
+  await selectMonth(page, 'Jul 2026');
+  await expect(page.getByText('Spent 55.30 CHF')).toBeVisible();
+
+  await selectMonth(page, 'All');
+  await expect(page.getByText('Spent 305.30 CHF')).toBeVisible();
+});
+
+test('total spend uses converted amounts for foreign currency expenses', async ({ page }) => {
+  await insertExpense('2026-07-06T10:00:00Z', 'Lidl Konstanz', 'Groceries', 20, 'EUR', 'Card payment', 'Expense', 19, 'CHF');
+  await page.goto('/');
+  await selectMonth(page, 'Jul 2026');
+
+  // 42.50 + 12.80 + 19.00 (converted from 20 EUR)
+  await expect(page.getByText('Spent 74.30 CHF')).toBeVisible();
+});
+
 test('displays monthly spending by category chart', async ({ page }) => {
   await page.goto('/');
   const chartSection = page.getByRole('region', {

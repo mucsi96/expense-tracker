@@ -7,17 +7,24 @@
 } @else {
 <app-monthly-category-chart />
 <div class="month-filter">
-  <mat-button-toggle-group
-    aria-label="Filter by month"
-    hideSingleSelectionIndicator
-    [value]="selectedMonth()"
-    (change)="selectedMonth.set($event.value)"
-  >
-    @for (option of monthOptions(); track option.key) {
-    <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
-    }
-    <mat-button-toggle value="all">All</mat-button-toggle>
-  </mat-button-toggle-group>
+  <div class="month-options">
+    <mat-button-toggle-group
+      aria-label="Filter by month"
+      hideSingleSelectionIndicator
+      [value]="selectedMonth()"
+      (change)="selectedMonth.set($event.value)"
+    >
+      @for (option of monthOptions(); track option.key) {
+      <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+      }
+      <mat-button-toggle value="all">All</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+  @if (totalSpend()) {
+  <p class="total-spend">
+    Spent <span class="total-spend-amount">{{ totalSpend() }}</span>
+  </p>
+  }
 </div>
 @if (days().length) {
   @for (day of days(); track day.day) {

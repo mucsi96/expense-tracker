@@ -19,9 +19,29 @@
 }
 
 .month-filter {
-  overflow-x: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin-bottom: 0.5rem;
+}
+
+.month-options {
+  min-width: 0;
+  overflow-x: auto;
   padding-bottom: 0.25rem;
+}
+
+.total-spend {
+  margin: 0 0 0 auto;
+  color: var(--bt-text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.total-spend-amount {
+  color: var(--bt-text-strong);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .day-group {

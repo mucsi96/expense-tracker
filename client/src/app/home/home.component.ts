@@ -87,13 +87,33 @@ export class HomeComponent {
       .map((key) => ({ key, label: toMonthLabel(key) }));
   });
 
-  readonly days = computed<ExpenseDay[]>(() => {
+  private readonly filteredExpenses = computed<Expense[]>(() => {
     const month = this.selectedMonth();
-    const expenses = (this.expenses.value() ?? []).filter(
+    return (this.expenses.value() ?? []).filter(
       (expense) =>
         month === 'all' || (expense.date && toMonthKey(expense.date) === month)
     );
-    return groupByDay(expenses);
+  });
+
+  readonly days = computed<ExpenseDay[]>(() =>
+    groupByDay(this.filteredExpenses())
+  );
+
+  readonly totalSpend = computed<string>(() => {
+    const baseCurrency = this.expenses.value()?.[0]?.baseCurrency;
+    if (!baseCurrency) {
+      return '';
+    }
+    const total = this.filteredExpenses()
+      .filter((expense) => expense.type === 'Expense')
+      .flatMap((expense) => {
+        const value = isForeign(expense)
+          ? expense.convertedAmount
+          : expense.amount;
+        return value == null ? [] : [value];
+      })
+      .reduce((sum, value) => sum + value, 0);
+    return `${total.toFixed(2)} ${baseCurrency}`;
   });
 
   readonly selectedMonthLabel = computed(() => {
