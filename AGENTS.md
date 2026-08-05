@@ -106,7 +106,10 @@ cd test && npx playwright test --ui  # Interactive test runner
 - `GET /api/expenses` - List expenses (authenticated)
 - `DELETE /api/expenses` - Delete all expenses (authenticated)
 - `PUT /api/expenses/{id}/category` - Assign an existing category to an
-  expense (authenticated; unknown categories are rejected with 422)
+  expense (authenticated; unknown categories are rejected with 422). Also
+  binds the category to the expense's merchant (the description):
+  every other expense at the same merchant is re-categorized and the
+  binding is applied to future imports
 - `GET /api/categories` - List categories sorted by name (authenticated)
 - `POST /api/categories` - Create a category with optional emoji and
   description (authenticated; duplicate names are rejected with 409)
@@ -130,6 +133,14 @@ cd test && npx playwright test --ui  # Interactive test runner
   assigns a category to a transaction via a bottom sheet. The home list shows
   the category's emoji on the transaction chip and its description as a
   tooltip; the picker sheet shows both.
+- **merchant_categories** - Binds a merchant (the expense description,
+  unique) to a category name. Recorded/updated whenever a transaction is
+  categorized: all expenses at that merchant get the category, and imported
+  expenses (e.g. bank notifications) without a category pick up the bound
+  one automatically. Renaming a category renames its bindings; deleting a
+  category deletes them (while expenses keep their category text). The
+  table was seeded from merchants whose existing expenses all share one
+  category.
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).

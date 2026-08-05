@@ -20,6 +20,21 @@ export async function query(text: string, params?: any[]) {
 export async function cleanupDb() {
   await query('DELETE FROM expensetracker.expenses');
   await query('DELETE FROM expensetracker.categories');
+  await query('DELETE FROM expensetracker.merchant_categories');
+}
+
+export async function insertMerchantCategory(merchant: string, category: string) {
+  await query(
+    'INSERT INTO expensetracker.merchant_categories (merchant, category) VALUES ($1, $2)',
+    [merchant, category]
+  );
+}
+
+export async function getMerchantCategories() {
+  const result = await query(
+    'SELECT * FROM expensetracker.merchant_categories ORDER BY merchant'
+  );
+  return result.rows;
 }
 
 export async function insertCategory(

@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
-import { getExpenses, insertExpense } from '../utils';
+import { getExpenses, getMerchantCategories, insertExpense } from '../utils';
 
 // The fixture seeds two July 2026 expenses (Migros Zurich, SBB Ticket) and
 // the categories Groceries (with 🛒 emoji and a description), Transport and
@@ -32,6 +32,60 @@ test('assigns a category to a transaction', async ({ page }) => {
 
   await expect(expenseItem(page, 'Migros Zurich')).toContainText('Restaurants');
   await expect.poll(migrosCategory).toBe('Restaurants');
+});
+
+test('applies the category to every expense at the same merchant', async ({
+  page,
+}) => {
+  await insertExpense('2026-07-10T10:00:00Z', 'Migros Zurich', 'Groceries', 15.2, 'CHF', 'Card payment', 'Expense');
+  await page.goto('/');
+  await selectMonth(page, 'Jul 2026');
+
+  await expenseItem(page, 'Migros Zurich')
+    .first()
+    .getByRole('button', { name: 'Change category: Groceries' })
+    .click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Restaurants' })
+    .click();
+
+  const migrosItems = expenseItem(page, 'Migros Zurich');
+  await expect(migrosItems).toHaveCount(2);
+  await expect(migrosItems.first()).toContainText('Restaurants');
+  await expect(migrosItems.last()).toContainText('Restaurants');
+  await expect
+    .poll(async () =>
+      (await getExpenses())
+        .filter((expense) => expense.description === 'Migros Zurich')
+        .map((expense) => expense.category)
+    )
+    .toEqual(['Restaurants', 'Restaurants']);
+});
+
+test('binds the category to the merchant when a transaction is categorized', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await selectMonth(page, 'Jul 2026');
+
+  await expenseItem(page, 'Migros Zurich')
+    .getByRole('button', { name: 'Change category: Groceries' })
+    .click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Restaurants' })
+    .click();
+
+  await expect(expenseItem(page, 'Migros Zurich')).toContainText('Restaurants');
+  await expect
+    .poll(async () =>
+      (await getMerchantCategories()).map(({ merchant, category }) => ({
+        merchant,
+        category,
+      }))
+    )
+    .toEqual([{ merchant: 'Migros Zurich', category: 'Restaurants' }]);
 });
 
 test('shows uncategorized transactions and assigns them a category', async ({

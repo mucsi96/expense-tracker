@@ -12,6 +12,7 @@ import io.github.mucsi96.expensetracker.model.CategoryRequest;
 import io.github.mucsi96.expensetracker.model.CategoryResponse;
 import io.github.mucsi96.expensetracker.repository.CategoryRepository;
 import io.github.mucsi96.expensetracker.repository.ExpenseRepository;
+import io.github.mucsi96.expensetracker.repository.MerchantCategoryRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class CategoryService {
   private final CategoryRepository categoryRepository;
   private final ExpenseRepository expenseRepository;
+  private final MerchantCategoryRepository merchantCategoryRepository;
 
   public List<CategoryResponse> getCategories() {
     return categoryRepository.findAllByOrderByNameAsc().stream()
@@ -44,6 +46,7 @@ public class CategoryService {
     if (!validName.equals(category.getName())) {
       requireAvailableName(validName);
       expenseRepository.updateCategoryName(category.getName(), validName);
+      merchantCategoryRepository.updateCategoryName(category.getName(), validName);
       category.setName(validName);
     }
     category.setEmoji(normalize(request.emoji()));
@@ -53,7 +56,9 @@ public class CategoryService {
 
   @Transactional
   public void deleteCategory(Long id) {
-    categoryRepository.delete(requireCategory(id));
+    Category category = requireCategory(id);
+    merchantCategoryRepository.deleteByCategory(category.getName());
+    categoryRepository.delete(category);
   }
 
   private Category requireCategory(Long id) {
