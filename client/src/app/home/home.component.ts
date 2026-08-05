@@ -1,15 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
-import { AgGridAngular } from 'ag-grid-angular';
-import {
-  type ColDef,
-  type GridReadyEvent,
-  ModuleRegistry,
-  ClientSideRowModelModule,
-  ValidationModule,
-  ColumnAutoSizeModule,
-  themeMaterial,
-  colorSchemeDarkBlue,
-} from 'ag-grid-community';
+import { Component, computed, inject, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import {
   BarLoaderComponent,
   NotificationsService,
@@ -17,16 +7,48 @@ import {
 import { Expense, ExpenseService } from '../expense.service';
 import { MonthlyCategoryChartComponent } from '../monthly-category-chart/monthly-category-chart.component';
 
-ModuleRegistry.registerModules([
-  ClientSideRowModelModule,
-  ValidationModule,
-  ColumnAutoSizeModule,
-]);
+type ExpenseDay = {
+  day: string;
+  label: string;
+  expenses: Expense[];
+};
+
+const toDayKey = (expense: Expense): string => expense.date?.slice(0, 10) ?? '';
+
+const toDayLabel = (day: string): string => {
+  if (!day) {
+    return 'Unknown date';
+  }
+  const [year, month, dayOfMonth] = day.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, dayOfMonth)).toLocaleDateString(
+    'en-US',
+    {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }
+  );
+};
+
+const groupByDay = (expenses: Expense[]): ExpenseDay[] =>
+  [...new Set(expenses.map(toDayKey))]
+    // Newest day first; expenses without a date ('') sort last
+    .sort((a, b) => b.localeCompare(a))
+    .map((day) => ({
+      day,
+      label: toDayLabel(day),
+      expenses: expenses.filter((expense) => toDayKey(expense) === day),
+    }));
+
+const isForeign = (expense: Expense): boolean =>
+  expense.currency !== expense.baseCurrency && expense.convertedAmount != null;
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [BarLoaderComponent, AgGridAngular, MonthlyCategoryChartComponent],
+  imports: [BarLoaderComponent, MatButtonModule, MonthlyCategoryChartComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
@@ -37,85 +59,36 @@ export class HomeComponent {
   readonly uploading = signal(false);
   readonly dragOver = signal(false);
 
-  readonly theme = themeMaterial.withPart(colorSchemeDarkBlue).withParams({
-    backgroundColor: 'hsl(215, 28%, 17%)',
-    foregroundColor: 'hsl(220, 13%, 91%)',
-    headerBackgroundColor: 'hsl(217, 19%, 27%)',
-    headerTextColor: 'hsl(220, 13%, 91%)',
-    headerFontWeight: 500,
-    rowHoverColor: 'hsl(217, 19%, 22%)',
-    accentColor: 'hsl(220, 89%, 53%)',
-    fontFamily: 'system-ui',
-  });
+  readonly days = computed<ExpenseDay[]>(() =>
+    groupByDay(this.expenses.value() ?? [])
+  );
 
-  readonly columnDefs: ColDef<Expense>[] = [
-    {
-      headerName: 'Date',
-      field: 'date',
-      width: 150,
-      sortable: true,
-      valueFormatter: (params) => {
-        if (!params.value) return '';
-        return new Date(params.value).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        });
-      },
-    },
-    {
-      headerName: 'Description',
-      field: 'description',
-      flex: 1,
-      minWidth: 200,
-      sortable: true,
-    },
-    {
-      headerName: 'Category',
-      field: 'category',
-      width: 180,
-      sortable: true,
-    },
-    {
-      headerName: 'Amount',
-      field: 'amount',
-      width: 130,
-      sortable: true,
-      valueFormatter: (params) =>
-        params.value != null ? `${params.value} ${params.data?.currency}` : '',
-    },
-    {
-      headerName: 'Converted',
-      field: 'convertedAmount',
-      width: 130,
-      sortable: true,
-      // Only meaningful for foreign-currency rows; base-currency rows would
-      // just repeat the Amount column.
-      valueFormatter: (params) =>
-        params.value != null && params.data?.currency !== params.data?.baseCurrency
-          ? `${params.value} ${params.data?.baseCurrency}`
-          : '',
-    },
-    {
-      headerName: 'Type',
-      field: 'type',
-      width: 110,
-      sortable: true,
-    },
-    {
-      headerName: 'Method',
-      field: 'method',
-      width: 150,
-      sortable: true,
-    },
-  ];
+  isIncome(expense: Expense): boolean {
+    return expense.type === 'Income';
+  }
 
-  readonly defaultColDef: ColDef = {
-    resizable: true,
-  };
+  signedAmount(expense: Expense): string {
+    const [value, currency] = isForeign(expense)
+      ? [expense.convertedAmount, expense.baseCurrency]
+      : [expense.amount, expense.currency];
+    if (value == null) {
+      return '';
+    }
+    const sign = this.isIncome(expense) ? '+' : '-';
+    return `${sign}${value.toFixed(2)} ${currency}`;
+  }
 
-  onGridReady(event: GridReadyEvent): void {
-    event.api.sizeColumnsToFit();
+  originalAmount(expense: Expense): string {
+    return isForeign(expense) && expense.amount != null
+      ? `${expense.amount.toFixed(2)} ${expense.currency}`
+      : '';
+  }
+
+  onFileInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    void this.importFiles(files);
   }
 
   onDragOver(event: DragEvent): void {
@@ -135,8 +108,10 @@ export class HomeComponent {
   async onDrop(event: DragEvent): Promise<void> {
     event.preventDefault();
     this.dragOver.set(false);
+    await this.importFiles(Array.from(event.dataTransfer?.files ?? []));
+  }
 
-    const files = Array.from(event.dataTransfer?.files ?? []);
+  private async importFiles(files: File[]): Promise<void> {
     if (!files.length) {
       return;
     }

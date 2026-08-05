@@ -19,6 +19,9 @@ const dropStatements = async (page: Page, ...filePaths: string[]): Promise<void>
   await page.dispatchEvent('.dropzone', 'drop', { dataTransfer });
 };
 
+const expenseItem = (page: Page, description: string) =>
+  page.getByRole('listitem').filter({ hasText: description });
+
 test('displays page title', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle('Expenses');
@@ -43,10 +46,19 @@ test('shows user name in popup', async ({ page }) => {
 
 test('displays expenses from database', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: 'Groceries' })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: '42.5 CHF' })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: 'SBB Ticket' })).toBeVisible();
+  const migros = expenseItem(page, 'Migros Zurich');
+  await expect(migros).toBeVisible();
+  await expect(migros).toContainText('Groceries');
+  await expect(migros).toContainText('-42.50 CHF');
+  await expect(expenseItem(page, 'SBB Ticket')).toBeVisible();
+});
+
+test('groups expenses by day with newest day first', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Fri, Jul 3, 2026' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Wed, Jul 1, 2026' })).toBeVisible();
+  const headings = page.getByRole('heading', { name: /2026$/ });
+  await expect(headings.first()).toHaveText('Fri, Jul 3, 2026');
 });
 
 test('displays monthly spending by category chart', async ({ page }) => {
@@ -65,50 +77,53 @@ test('displays monthly spending by category chart', async ({ page }) => {
   await expect(chartSection.getByText('Jul 2026')).toBeVisible();
 });
 
-test('imports expenses from account statement dropped on the grid', async ({ page }) => {
+test('imports expenses from account statement dropped on the expense list', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
+  await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
 
   await dropStatements(page, join(__dirname, '../files/account-statement.csv'));
 
-  await expect(page.getByRole('gridcell', { name: 'Coffee Shop' })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: '25.9 CHF' })).toBeVisible();
+  const coffeeShop = expenseItem(page, 'Coffee Shop');
+  await expect(coffeeShop).toBeVisible();
+  await expect(coffeeShop).toContainText('-25.90 CHF');
 });
 
 test('imports credit transactions as income', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
+  await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
 
   await dropStatements(page, join(__dirname, '../files/account-statement.csv'));
 
-  await expect(page.getByRole('gridcell', { name: 'Tax Refund' })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: 'Income' })).toBeVisible();
+  const taxRefund = expenseItem(page, 'Tax Refund');
+  await expect(taxRefund).toBeVisible();
+  await expect(taxRefund).toContainText('+150.00 CHF');
 });
 
-test('imports expenses from card statement dropped on the grid', async ({ page }) => {
+test('imports expenses from card statement dropped on the expense list', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
+  await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
 
   await dropStatements(page, join(__dirname, '../files/card-statement.csv'));
 
-  await expect(page.getByRole('gridcell', { name: 'Coop Pronto' })).toBeVisible();
+  await expect(expenseItem(page, 'Coop Pronto')).toBeVisible();
 });
 
 test('preserves foreign currency and stores the converted amount', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
+  await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
 
   await dropStatements(page, join(__dirname, '../files/card-statement.csv'));
 
-  // Original amount keeps its own currency instead of being labelled CHF
-  await expect(page.getByRole('gridcell', { name: 'Lidl Konstanz' })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: '20 EUR', exact: true })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: '19 CHF', exact: true })).toBeVisible();
+  // Converted amount leads, original foreign amount stays visible
+  const lidl = expenseItem(page, 'Lidl Konstanz');
+  await expect(lidl).toBeVisible();
+  await expect(lidl).toContainText('-19.00 CHF');
+  await expect(lidl).toContainText('20.00 EUR');
 });
 
 test('imports multiple statements dropped together', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
+  await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
 
   await dropStatements(
     page,
@@ -116,13 +131,13 @@ test('imports multiple statements dropped together', async ({ page }) => {
     join(__dirname, '../files/card-statement.csv')
   );
 
-  await expect(page.getByRole('gridcell', { name: 'Coffee Shop' })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: 'Coop Pronto' })).toBeVisible();
+  await expect(expenseItem(page, 'Coffee Shop')).toBeVisible();
+  await expect(expenseItem(page, 'Coop Pronto')).toBeVisible();
 });
 
 test('shows notification about successful upload', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
+  await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
 
   await dropStatements(page, join(__dirname, '../files/account-statement.csv'));
 
@@ -133,27 +148,62 @@ test('shows notification about successful upload', async ({ page }) => {
 
 test('skips summary rows from card statement upload', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
+  await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
 
   await dropStatements(page, join(__dirname, '../files/card-statement.csv'));
 
-  await expect(page.getByRole('gridcell', { name: 'Coop Pronto' })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: 'Total per currency' })).not.toBeVisible();
-  await expect(page.getByRole('gridcell', { name: 'Total card bookings' })).not.toBeVisible();
+  await expect(expenseItem(page, 'Coop Pronto')).toBeVisible();
+  await expect(page.getByText('Total per currency')).not.toBeVisible();
+  await expect(page.getByText('Total card bookings')).not.toBeVisible();
 });
 
 test('skips duplicate expenses on repeated upload', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('gridcell', { name: 'Migros Zurich' })).toBeVisible();
+  await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
 
   await dropStatements(page, join(__dirname, '../files/account-statement.csv'));
-  await expect(page.getByRole('gridcell', { name: 'Coffee Shop' })).toBeVisible();
+  await expect(expenseItem(page, 'Coffee Shop')).toBeVisible();
 
   await dropStatements(page, join(__dirname, '../files/account-statement.csv'));
-  await expect(page.getByRole('gridcell', { name: 'Coffee Shop' })).toBeVisible();
+  await expect(expenseItem(page, 'Coffee Shop')).toBeVisible();
 
   await expect.poll(async () => {
     const expenses = await getExpenses();
     return expenses.filter((expense) => expense.description === 'Coffee Shop').length;
   }).toBe(1);
+});
+
+test.describe('mobile viewport', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test('fits expenses and chart without horizontal scrolling', async ({ page }) => {
+    await page.goto('/');
+    await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: 'Monthly spending by category' })
+    ).toBeVisible();
+
+    const horizontalOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
+    );
+    expect(horizontalOverflow).toBe(0);
+  });
+
+  test('imports statement with the Import CSV button', async ({ page }) => {
+    await page.goto('/');
+    await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
+
+    const fileChooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Import CSV' }).click();
+    await (await fileChooser).setFiles(
+      join(__dirname, '../files/account-statement.csv')
+    );
+
+    await expect(expenseItem(page, 'Coffee Shop')).toBeVisible();
+    await expect(
+      page.getByText('2 expense(s) imported from account-statement.csv')
+    ).toBeVisible();
+  });
 });

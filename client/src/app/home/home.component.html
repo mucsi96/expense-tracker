@@ -1,5 +1,14 @@
 <div class="page-header">
   <h1>Expenses</h1>
+  <button mat-flat-button (click)="fileInput.click()">Import CSV</button>
+  <input
+    #fileInput
+    type="file"
+    accept=".csv,text/csv"
+    multiple
+    hidden
+    (change)="onFileInputChange($event)"
+  />
 </div>
 
 @if (expenses.isLoading() || uploading()) {
@@ -13,18 +22,35 @@
   (dragleave)="onDragLeave($event)"
   (drop)="onDrop($event)"
 >
-  @if (expenses.value()?.length) {
-  <ag-grid-angular
-    class="expenses-grid"
-    [theme]="theme"
-    [columnDefs]="columnDefs"
-    [defaultColDef]="defaultColDef"
-    [rowData]="expenses.value()"
-    (gridReady)="onGridReady($event)"
-  />
+  @if (days().length) {
+    @for (day of days(); track day.day) {
+  <section class="day-group">
+    <h2 class="day-heading">{{ day.label }}</h2>
+    <ul class="expense-list">
+      @for (expense of day.expenses; track expense.id) {
+      <li class="expense-item">
+        <div class="expense-details">
+          <span class="expense-description">{{ expense.description }}</span>
+          <span class="expense-meta"
+            >{{ expense.category }} · {{ expense.method }}</span
+          >
+        </div>
+        <div class="expense-amounts">
+          <span class="expense-amount" [class.income]="isIncome(expense)">{{
+            signedAmount(expense)
+          }}</span>
+          @if (originalAmount(expense); as original) {
+          <span class="expense-original">{{ original }}</span>
+          }
+        </div>
+      </li>
+      }
+    </ul>
+  </section>
+    }
   } @else {
   <p class="empty-state">
-    No expenses yet. Drop a bank statement CSV here to get started.
+    No expenses yet. Import a bank statement CSV to get started.
   </p>
   }
   @if (dragOver()) {

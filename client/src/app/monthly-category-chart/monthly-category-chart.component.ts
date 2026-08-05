@@ -77,6 +77,9 @@ export class MonthlyCategoryChartComponent {
       },
       legend: {
         top: 0,
+        // Single scrollable row keeps the legend from eating chart height on
+        // narrow screens
+        type: 'scroll',
         textStyle: {
           color: TEXT_COLOR,
         },
