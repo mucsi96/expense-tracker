@@ -6,6 +6,26 @@
 <bt-bar-loader class="page-loading" label="Loading expenses" />
 } @else {
 <app-monthly-category-chart />
+@if (uncategorizedDays().length) {
+<section class="uncategorized" aria-label="Uncategorized">
+  <h2 class="uncategorized-heading">Uncategorized</h2>
+  @for (day of uncategorizedDays(); track day.day) {
+  <section class="day-group">
+    <h3 class="day-heading">{{ day.label }}</h3>
+    <ul class="expense-list">
+      @for (expense of day.expenses; track expense.id) {
+      <li class="expense-item">
+        <ng-container
+          [ngTemplateOutlet]="expenseRow"
+          [ngTemplateOutletContext]="{ $implicit: expense }"
+        />
+      </li>
+      }
+    </ul>
+  </section>
+  }
+</section>
+}
 <div class="month-filter">
   <div class="month-options">
     <mat-button-toggle-group
@@ -33,32 +53,10 @@
   <ul class="expense-list">
     @for (expense of day.expenses; track expense.id) {
     <li class="expense-item">
-      <div class="expense-details">
-        <span class="expense-description">{{ expense.description }}</span>
-        <span class="expense-meta">
-          <button
-            class="category-chip"
-            [attr.aria-label]="'Change category: ' + categoryLabel(expense)"
-            [matTooltip]="categoryDescription(expense)"
-            (click)="changeCategory(expense)"
-          >
-            @if (categoryEmoji(expense)) {
-            <span class="category-emoji" aria-hidden="true">{{
-              categoryEmoji(expense)
-            }}</span>
-            }
-            {{ categoryLabel(expense) }}
-          </button>
-        </span>
-      </div>
-      <div class="expense-amounts">
-        <span class="expense-amount" [class.income]="isIncome(expense)">{{
-          signedAmount(expense)
-        }}</span>
-        @if (originalAmount(expense); as original) {
-        <span class="expense-original">{{ original }}</span>
-        }
-      </div>
+      <ng-container
+        [ngTemplateOutlet]="expenseRow"
+        [ngTemplateOutletContext]="{ $implicit: expense }"
+      />
     </li>
     }
   </ul>
@@ -73,3 +71,32 @@
 </p>
 }
 }
+
+<ng-template #expenseRow let-expense>
+  <div class="expense-details">
+    <span class="expense-description">{{ expense.description }}</span>
+    <span class="expense-meta">
+      <button
+        class="category-chip"
+        [attr.aria-label]="'Change category: ' + categoryLabel(expense)"
+        [matTooltip]="categoryDescription(expense)"
+        (click)="changeCategory(expense)"
+      >
+        @if (categoryEmoji(expense)) {
+        <span class="category-emoji" aria-hidden="true">{{
+          categoryEmoji(expense)
+        }}</span>
+        }
+        {{ categoryLabel(expense) }}
+      </button>
+    </span>
+  </div>
+  <div class="expense-amounts">
+    <span class="expense-amount" [class.income]="isIncome(expense)">{{
+      signedAmount(expense)
+    }}</span>
+    @if (originalAmount(expense); as original) {
+    <span class="expense-original">{{ original }}</span>
+    }
+  </div>
+</ng-template>

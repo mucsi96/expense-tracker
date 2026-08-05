@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
   MatBottomSheet,
@@ -56,6 +57,8 @@ const groupByDay = (expenses: Expense[]): ExpenseDay[] =>
       expenses: expenses.filter((expense) => toDayKey(expense) === day),
     }));
 
+const hasCategory = (expense: Expense): boolean => !!expense.category;
+
 const isForeign = (expense: Expense): boolean =>
   expense.currency !== expense.baseCurrency && expense.convertedAmount != null;
 
@@ -68,6 +71,7 @@ const isForeign = (expense: Expense): boolean =>
     MatButtonToggleModule,
     MatTooltipModule,
     MonthlyCategoryChartComponent,
+    NgTemplateOutlet,
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
@@ -109,8 +113,18 @@ export class HomeComponent {
     );
   });
 
+  // Uncategorized transactions are listed separately above the month filter,
+  // regardless of the selected month
+  readonly uncategorizedDays = computed<ExpenseDay[]>(() =>
+    groupByDay(
+      (this.expenses.value() ?? []).filter(
+        (expense) => !hasCategory(expense)
+      )
+    )
+  );
+
   readonly days = computed<ExpenseDay[]>(() =>
-    groupByDay(this.filteredExpenses())
+    groupByDay(this.filteredExpenses().filter(hasCategory))
   );
 
   readonly totalSpend = computed<string>(() => {

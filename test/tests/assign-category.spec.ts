@@ -88,14 +88,16 @@ test('binds the category to the merchant when a transaction is categorized', asy
     .toEqual([{ merchant: 'Migros Zurich', category: 'Restaurants' }]);
 });
 
-test('shows uncategorized transactions and assigns them a category', async ({
+test('assigns a category to an uncategorized transaction and moves it to the main list', async ({
   page,
 }) => {
   await insertExpense('2026-07-05T10:00:00Z', 'Unknown Shop', '', 9.9, 'CHF', 'Card payment', 'Expense');
   await page.goto('/');
-  await selectMonth(page, 'Jul 2026');
 
-  await expenseItem(page, 'Unknown Shop')
+  const uncategorized = page.getByRole('region', { name: 'Uncategorized' });
+  await uncategorized
+    .getByRole('listitem')
+    .filter({ hasText: 'Unknown Shop' })
     .getByRole('button', { name: 'Change category: Uncategorized' })
     .click();
   await page
@@ -103,6 +105,8 @@ test('shows uncategorized transactions and assigns them a category', async ({
     .getByRole('button', { name: 'Groceries' })
     .click();
 
+  await expect(uncategorized).not.toBeVisible();
+  await selectMonth(page, 'Jul 2026');
   await expect(expenseItem(page, 'Unknown Shop')).toContainText('Groceries');
 });
 
