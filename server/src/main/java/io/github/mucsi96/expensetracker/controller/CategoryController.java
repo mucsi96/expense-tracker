@@ -33,13 +33,13 @@ public class CategoryController {
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_createExpenses')")
   public CategoryResponse createCategory(@RequestBody CategoryRequest request) {
-    return categoryService.createCategory(request.name());
+    return categoryService.createCategory(request);
   }
 
   @PutMapping("/categories/{id}")
   @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_createExpenses')")
-  public CategoryResponse renameCategory(@PathVariable Long id, @RequestBody CategoryRequest request) {
-    return categoryService.renameCategory(id, request.name());
+  public CategoryResponse updateCategory(@PathVariable Long id, @RequestBody CategoryRequest request) {
+    return categoryService.updateCategory(id, request);
   }
 
   @DeleteMapping("/categories/{id}")

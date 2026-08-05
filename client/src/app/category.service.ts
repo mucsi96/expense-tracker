@@ -6,6 +6,14 @@ import { fetchJson } from './utils/fetchJson';
 export interface Category {
   id: number;
   name: string;
+  emoji: string | null;
+  description: string | null;
+}
+
+export interface CategoryAttributes {
+  name: string;
+  emoji: string;
+  description: string;
 }
 
 @Injectable({
@@ -18,16 +26,19 @@ export class CategoryService {
     loader: () => fetchJson<Category[]>(this.http, '/api/categories'),
   });
 
-  async addCategory(name: string): Promise<void> {
+  async addCategory(attributes: CategoryAttributes): Promise<void> {
     await firstValueFrom(
-      this.http.post<Category>('/api/categories', { name })
+      this.http.post<Category>('/api/categories', attributes)
     );
     this.categories.reload();
   }
 
-  async renameCategory(id: number, name: string): Promise<void> {
+  async updateCategory(
+    id: number,
+    attributes: CategoryAttributes
+  ): Promise<void> {
     await firstValueFrom(
-      this.http.put<Category>(`/api/categories/${id}`, { name })
+      this.http.put<Category>(`/api/categories/${id}`, attributes)
     );
     this.categories.reload();
   }

@@ -3,7 +3,8 @@ import { test, expect } from '../fixtures';
 import { getExpenses, insertExpense } from '../utils';
 
 // The fixture seeds two July 2026 expenses (Migros Zurich, SBB Ticket) and
-// the categories Groceries, Transport and Restaurants.
+// the categories Groceries (with 🛒 emoji and a description), Transport and
+// Restaurants.
 
 const expenseItem = (page: Page, description: string) =>
   page.getByRole('listitem').filter({ hasText: description });
@@ -49,6 +50,55 @@ test('shows uncategorized transactions and assigns them a category', async ({
     .click();
 
   await expect(expenseItem(page, 'Unknown Shop')).toContainText('Groceries');
+});
+
+test('shows the category emoji on the transaction', async ({ page }) => {
+  await page.goto('/');
+  await selectMonth(page, 'Jul 2026');
+
+  await expect(
+    expenseItem(page, 'Migros Zurich').getByRole('button', {
+      name: 'Change category: Groceries',
+    })
+  ).toContainText('🛒');
+});
+
+test('shows the category description as a tooltip on hover', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await selectMonth(page, 'Jul 2026');
+
+  const chip = expenseItem(page, 'Migros Zurich').getByRole('button', {
+    name: 'Change category: Groceries',
+  });
+  await expect(chip).toHaveAccessibleDescription('Migros, Coop, Aldi, Lidl');
+  await chip.hover();
+
+  // The description also exists as a hidden aria-describedby message, so
+  // scope to the overlay to assert the tooltip itself is shown.
+  await expect(
+    page
+      .locator('.cdk-overlay-container')
+      .getByText('Migros, Coop, Aldi, Lidl')
+  ).toBeVisible();
+});
+
+test('shows the category emoji and description in the picker', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await selectMonth(page, 'Jul 2026');
+
+  await expenseItem(page, 'SBB Ticket')
+    .getByRole('button', { name: 'Change category: Transport' })
+    .click();
+
+  const groceriesOption = page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Groceries' });
+  await expect(groceriesOption).toContainText('🛒');
+  await expect(groceriesOption).toContainText('Migros, Coop, Aldi, Lidl');
 });
 
 test('keeps the category when the picker is dismissed', async ({ page }) => {

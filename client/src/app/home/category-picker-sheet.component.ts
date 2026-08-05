@@ -21,7 +21,17 @@ import { CategoryService } from '../category.service';
           class="category-option"
           (click)="select(category.name)"
         >
-          {{ category.name }}
+          <span class="option-label">
+            @if (category.emoji) {
+            <span class="option-emoji" aria-hidden="true">{{
+              category.emoji
+            }}</span>
+            }
+            {{ category.name }}
+          </span>
+          @if (category.description) {
+          <span class="option-description">{{ category.description }}</span>
+          }
         </button>
       </li>
       } @empty {
@@ -57,6 +67,23 @@ import { CategoryService } from '../category.service';
       width: 100%;
       min-height: 44px;
       justify-content: flex-start;
+      text-align: left;
+    }
+
+    .category-option ::ng-deep .mdc-button__label {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.125rem;
+      padding: 0.375rem 0;
+    }
+
+    .option-description {
+      color: var(--bt-text-muted);
+      font-size: 0.8rem;
+      font-weight: normal;
+      overflow-wrap: anywhere;
+      white-space: normal;
     }
 
     .sheet-loading {

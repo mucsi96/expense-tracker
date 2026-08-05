@@ -12,7 +12,7 @@ import {
   NotificationsService,
 } from '@mucsi96/angular-material-theme';
 import { Category, CategoryService } from '../../category.service';
-import { RenameCategoryDialogComponent } from './rename-category-dialog.component';
+import { EditCategoryDialogComponent } from './edit-category-dialog.component';
 
 @Component({
   selector: 'app-categories',
@@ -35,6 +35,8 @@ export class CategoriesComponent {
   private readonly dialog = inject(MatDialog);
   readonly categories = this.categoryService.categories;
   readonly newCategoryName = signal('');
+  readonly newCategoryEmoji = signal('');
+  readonly newCategoryDescription = signal('');
   readonly saving = signal(false);
 
   async addCategory(): Promise<void> {
@@ -45,8 +47,14 @@ export class CategoriesComponent {
 
     this.saving.set(true);
     try {
-      await this.categoryService.addCategory(name);
+      await this.categoryService.addCategory({
+        name,
+        emoji: this.newCategoryEmoji().trim(),
+        description: this.newCategoryDescription().trim(),
+      });
       this.newCategoryName.set('');
+      this.newCategoryEmoji.set('');
+      this.newCategoryDescription.set('');
       this.notifications.success('Category added');
     } catch {
       this.notifications.error('Failed to add category');
@@ -55,21 +63,21 @@ export class CategoriesComponent {
     }
   }
 
-  async renameCategory(category: Category): Promise<void> {
-    const name = await firstValueFrom(
+  async editCategory(category: Category): Promise<void> {
+    const attributes = await firstValueFrom(
       this.dialog
-        .open(RenameCategoryDialogComponent, { data: category })
+        .open(EditCategoryDialogComponent, { data: category })
         .afterClosed()
     );
-    if (!name?.trim() || name.trim() === category.name) {
+    if (!attributes) {
       return;
     }
 
     try {
-      await this.categoryService.renameCategory(category.id, name.trim());
-      this.notifications.success('Category renamed');
+      await this.categoryService.updateCategory(category.id, attributes);
+      this.notifications.success('Category updated');
     } catch {
-      this.notifications.error('Failed to rename category');
+      this.notifications.error('Failed to update category');
     }
   }
 
