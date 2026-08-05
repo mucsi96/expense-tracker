@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { cleanupDb, getExpenses } from '../utils';
+import { cleanupDb, getExpenses, insertMerchantCategory } from '../utils';
 
 // Matches bank-notification-token in application-test.yml
 const token = 'test-bank-notification-token';
@@ -79,6 +79,24 @@ test('stores bank notification as card payment expense', async ({ request }) => 
   });
   // No date in the body, so the email's Date header (08:44:31 +0200) is used
   expect(new Date(expenses[0].expense_date).toISOString()).toBe('2026-08-04T06:44:31.000Z');
+});
+
+test('applies the category bound to the merchant', async ({ request }) => {
+  await insertMerchantCategory('COFFEE SHOP ZÜRICH', 'Restaurants');
+
+  const response = await request.post('/api/bank-notifications', {
+    headers: { Authorization: `Bearer ${token}` },
+    data: notification,
+  });
+
+  expect(response.status()).toBe(204);
+
+  const expenses = await getExpenses();
+  expect(expenses).toHaveLength(1);
+  expect(expenses[0]).toMatchObject({
+    description: 'COFFEE SHOP ZÜRICH',
+    category: 'Restaurants',
+  });
 });
 
 test('converts foreign amounts to the base currency', async ({ request }) => {

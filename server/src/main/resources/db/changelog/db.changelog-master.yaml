@@ -99,3 +99,35 @@ databaseChangeLog:
               - column:
                   name: description
                   type: text
+  - changeSet:
+      id: 5-create-merchant-categories-table
+      author: mucsi96
+      changes:
+        - createTable:
+            tableName: merchant_categories
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: merchant
+                  type: text
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: category
+                  type: text
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >-
+              INSERT INTO expensetracker.merchant_categories (merchant, category)
+              SELECT description, MIN(category) FROM expensetracker.expenses
+              WHERE description IS NOT NULL AND description <> ''
+              AND category IS NOT NULL AND category <> ''
+              GROUP BY description
+              HAVING COUNT(DISTINCT category) = 1
