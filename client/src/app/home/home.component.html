@@ -2,33 +2,55 @@
   <h1>Expenses</h1>
 </div>
 
-@if (expenses.isLoading() || uploading()) {
+@if (expenses.isLoading()) {
 <bt-bar-loader class="page-loading" label="Loading expenses" />
 } @else {
 <app-monthly-category-chart />
-<div
-  class="dropzone"
-  [class.drag-over]="dragOver()"
-  (dragover)="onDragOver($event)"
-  (dragleave)="onDragLeave($event)"
-  (drop)="onDrop($event)"
->
-  @if (expenses.value()?.length) {
-  <ag-grid-angular
-    class="expenses-grid"
-    [theme]="theme"
-    [columnDefs]="columnDefs"
-    [defaultColDef]="defaultColDef"
-    [rowData]="expenses.value()"
-    (gridReady)="onGridReady($event)"
-  />
-  } @else {
-  <p class="empty-state">
-    No expenses yet. Drop a bank statement CSV here to get started.
-  </p>
-  }
-  @if (dragOver()) {
-  <div class="drop-overlay">Drop CSV statement to import</div>
-  }
+<div class="month-filter">
+  <mat-button-toggle-group
+    aria-label="Filter by month"
+    hideSingleSelectionIndicator
+    [value]="selectedMonth()"
+    (change)="selectedMonth.set($event.value)"
+  >
+    @for (option of monthOptions(); track option.key) {
+    <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
+    }
+    <mat-button-toggle value="all">All</mat-button-toggle>
+  </mat-button-toggle-group>
 </div>
+@if (days().length) {
+  @for (day of days(); track day.day) {
+<section class="day-group">
+  <h2 class="day-heading">{{ day.label }}</h2>
+  <ul class="expense-list">
+    @for (expense of day.expenses; track expense.id) {
+    <li class="expense-item">
+      <div class="expense-details">
+        <span class="expense-description">{{ expense.description }}</span>
+        <span class="expense-meta"
+          >{{ expense.category }} · {{ expense.method }}</span
+        >
+      </div>
+      <div class="expense-amounts">
+        <span class="expense-amount" [class.income]="isIncome(expense)">{{
+          signedAmount(expense)
+        }}</span>
+        @if (originalAmount(expense); as original) {
+        <span class="expense-original">{{ original }}</span>
+        }
+      </div>
+    </li>
+    }
+  </ul>
+</section>
+  }
+} @else if (expenses.value()?.length) {
+<p class="empty-state">No transactions in {{ selectedMonthLabel() }}.</p>
+} @else {
+<p class="empty-state">
+  No expenses yet. Card payments show up here automatically when bank
+  notifications arrive.
+</p>
+}
 }

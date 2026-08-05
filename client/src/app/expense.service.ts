@@ -18,10 +18,6 @@ export interface Expense {
   comment: string;
 }
 
-export interface UploadResponse {
-  importedCount: number;
-}
-
 @Injectable({
   providedIn: 'root',
 })
@@ -31,16 +27,6 @@ export class ExpenseService {
   expenses = resource<Expense[], {}>({
     loader: () => fetchJson<Expense[]>(this.http, '/api/expenses'),
   });
-
-  async uploadStatement(file: File): Promise<UploadResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await firstValueFrom(
-      this.http.post<UploadResponse>('/api/upload', formData)
-    );
-    this.expenses.reload();
-    return response;
-  }
 
   async deleteAllExpenses(): Promise<void> {
     await firstValueFrom(this.http.delete<void>('/api/expenses'));

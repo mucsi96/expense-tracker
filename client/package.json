@@ -21,8 +21,6 @@
     "@angular/router": "22.0.7",
     "@grafana/faro-web-sdk": "^2.7.0",
     "@mucsi96/angular-material-theme": "^1.4.0",
-    "ag-grid-angular": "^35.3.1",
-    "ag-grid-community": "^35.3.1",
     "echarts": "^6.1.0",
     "ngx-echarts": "^22.0.0",
     "oidc-client-ts": "^3.1.0",

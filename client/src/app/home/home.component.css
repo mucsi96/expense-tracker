@@ -1,50 +1,100 @@
 :host {
   display: block;
-  max-width: 1200px;
+  max-width: 75rem;
   margin: 0 auto;
-  padding: 0 2rem;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  gap: 1rem;
+  margin-bottom: 1rem;
 
   h1 {
     color: var(--bt-text-strong);
+    font-size: 1.5rem;
     margin: 0;
   }
 }
 
-.dropzone {
-  position: relative;
-  border: 2px dashed transparent;
-  border-radius: 8px;
+.month-filter {
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
 }
 
-.dropzone.drag-over {
-  border-color: hsl(220, 89%, 53%);
+.day-group {
+  margin-bottom: 1rem;
 }
 
-.drop-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: hsla(220, 89%, 53%, 0.15);
-  border-radius: 8px;
-  color: var(--bt-text-strong);
-  font-size: 1.25rem;
+.day-heading {
+  color: var(--bt-text-muted);
+  font-size: 0.8125rem;
   font-weight: 500;
-  pointer-events: none;
-  z-index: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+  padding: 0.5rem 0.25rem 0.25rem;
 }
 
-.expenses-grid {
-  width: 100%;
-  height: 600px;
+.expense-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.expense-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  min-height: 44px;
+  padding: 0.75rem 0.25rem;
+  border-bottom: 1px solid var(--bt-outline);
+}
+
+.expense-item:last-child {
+  border-bottom: none;
+}
+
+.expense-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.expense-description {
+  color: var(--bt-text-strong);
+  overflow-wrap: anywhere;
+}
+
+.expense-meta {
+  color: var(--bt-text-muted);
+  font-size: 0.8125rem;
+}
+
+.expense-amounts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+  white-space: nowrap;
+}
+
+.expense-amount {
+  color: var(--bt-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.expense-amount.income {
+  color: hsl(142, 71%, 45%);
+}
+
+.expense-original {
+  color: var(--bt-text-muted);
+  font-size: 0.8125rem;
 }
 
 .empty-state {
@@ -58,4 +108,14 @@
   display: flex;
   justify-content: center;
   margin: 150px auto;
+}
+
+@media (min-width: 48rem) {
+  :host {
+    padding: 0 1rem;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+  }
 }

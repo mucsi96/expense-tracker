@@ -1,7 +1,7 @@
 # Expense Tracker
 
-A web app to track expenses, revenues, and budget. Bank and card statement
-CSV exports are imported, de-duplicated and listed.
+A web app to track expenses, revenues, and budget. Bank card notification
+emails are parsed into expenses, de-duplicated and listed.
 
 Based on the patterns from [skeleton-app](https://github.com/mucsi96/skeleton-app).
 

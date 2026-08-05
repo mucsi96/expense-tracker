@@ -105,15 +105,13 @@ cd test && npx playwright test --ui  # Interactive test runner
 - `GET /api/environment` - Client configuration (public)
 - `GET /api/expenses` - List expenses (authenticated)
 - `DELETE /api/expenses` - Delete all expenses (authenticated)
-- `POST /api/upload` - Import expenses from a bank/card statement CSV (authenticated)
 - `POST /api/bank-notifications` - Receive a bank card notification email from
   the Cloudflare email worker (bearer-token authenticated, see below)
 
 ## Data Model
 
-- **expenses** - Stores imported expenses (date, description, location,
-  category, amount, currency, converted_amount, base_currency, method, type,
-  comment)
+- **expenses** - Stores expenses (date, description, location, category,
+  amount, currency, converted_amount, base_currency, method, type, comment)
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).
@@ -124,23 +122,6 @@ reporting currency (CHF by default, configurable via
 `expense-tracker.base-currency`). Reporting (e.g. the monthly chart) uses the
 converted amount so mixed currencies aggregate correctly, while duplicate
 detection uses the original amount.
-
-## CSV Import
-
-Two statement formats are auto-detected by their header row:
-- **Account statement** (UTF-8, `;` separated, 14 columns) - mapped to "Direct payment" expenses
-- **Card statement** (ISO-8859-1, `;` separated, 13 columns) - mapped to "Card payment" expenses
-
-Format tolerances (newer bank exports):
-- Metadata preamble lines (account number, IBAN, balances, ...) and a leading
-  `sep=;` line are ignored; only rows matching the column count are imported
-- Account statement rows may end with a trailing `;` (parsed as a 15th empty column)
-- Dates are accepted as `dd.MM.yyyy` or ISO `yyyy-MM-dd`
-- Account statement amount comes from "Individual amount", falling back to the
-  absolute value of Debit, then Credit
-
-Summary rows (description "Total per currency" or "Total card bookings") are
-not imported.
 
 ## Bank Notifications
 
@@ -198,13 +179,12 @@ Rows already in the base currency are stored unchanged; a foreign amount without
 a transaction date fails fast rather than being silently treated as CHF. E2E
 tests run the real provider against a Frankfurter-compatible Express mock
 (`mock_exchange_rate_server/`, wired into the test pod and pointed at via
-`application-test.yml`) so imports need no external network. Prod/local
+`application-test.yml`) so tests need no external network. Prod/local
 deployments need outbound access to the API host.
 
 Duplicates are skipped: an expense with the same day, description and whole
-(original) amount as an existing one is not imported again. Using the original
-amount keeps duplicate detection stable across re-imports regardless of
-conversion.
+(original) amount as an existing one is not stored again. Using the original
+amount keeps duplicate detection stable regardless of conversion.
 
 ## Configuration Patterns
 
