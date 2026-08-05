@@ -69,11 +69,19 @@ test('shows the category description as a tooltip on hover', async ({
   await page.goto('/');
   await selectMonth(page, 'Jul 2026');
 
-  await expenseItem(page, 'Migros Zurich')
-    .getByRole('button', { name: 'Change category: Groceries' })
-    .hover();
+  const chip = expenseItem(page, 'Migros Zurich').getByRole('button', {
+    name: 'Change category: Groceries',
+  });
+  await expect(chip).toHaveAccessibleDescription('Migros, Coop, Aldi, Lidl');
+  await chip.hover();
 
-  await expect(page.getByText('Migros, Coop, Aldi, Lidl')).toBeVisible();
+  // The description also exists as a hidden aria-describedby message, so
+  // scope to the overlay to assert the tooltip itself is shown.
+  await expect(
+    page
+      .locator('.cdk-overlay-container')
+      .getByText('Migros, Coop, Aldi, Lidl')
+  ).toBeVisible();
 });
 
 test('shows the category emoji and description in the picker', async ({
