@@ -1,0 +1,55 @@
+<div class="page-header">
+  <a mat-button routerLink="/settings" class="back-link">‹ Settings</a>
+  <h1>Categories</h1>
+</div>
+
+@if (categories.isLoading()) {
+<bt-bar-loader class="page-loading" label="Loading categories" />
+} @else {
+<form class="add-form" (ngSubmit)="addCategory()">
+  <mat-form-field class="name-field" subscriptSizing="dynamic">
+    <mat-label>New category</mat-label>
+    <input
+      matInput
+      name="name"
+      [ngModel]="newCategoryName()"
+      (ngModelChange)="newCategoryName.set($event)"
+    />
+  </mat-form-field>
+  <button
+    mat-flat-button
+    type="submit"
+    [disabled]="saving() || !newCategoryName().trim()"
+  >
+    Add
+  </button>
+</form>
+
+<ul class="category-list">
+  @for (category of categories.value() ?? []; track category.id) {
+  <li class="category-item">
+    <span class="category-name">{{ category.name }}</span>
+    <span class="category-actions">
+      <button
+        mat-icon-button
+        [attr.aria-label]="'Rename ' + category.name"
+        (click)="renameCategory(category)"
+      >
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        [attr.aria-label]="'Delete ' + category.name"
+        (click)="deleteCategory(category)"
+      >
+        <mat-icon>delete</mat-icon>
+      </button>
+    </span>
+  </li>
+  } @empty {
+  <li class="empty-state">
+    No categories yet. Add your first category above.
+  </li>
+  }
+</ul>
+}

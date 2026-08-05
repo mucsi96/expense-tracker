@@ -19,6 +19,20 @@ export async function query(text: string, params?: any[]) {
 
 export async function cleanupDb() {
   await query('DELETE FROM expensetracker.expenses');
+  await query('DELETE FROM expensetracker.categories');
+}
+
+export async function insertCategory(name: string) {
+  await query('INSERT INTO expensetracker.categories (name) VALUES ($1)', [
+    name,
+  ]);
+}
+
+export async function getCategories() {
+  const result = await query(
+    'SELECT * FROM expensetracker.categories ORDER BY name'
+  );
+  return result.rows;
 }
 
 export async function insertExpense(

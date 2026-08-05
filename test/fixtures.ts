@@ -1,13 +1,16 @@
 import { test as base, TestInfo } from '@playwright/test';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { cleanupDb, insertExpense } from './utils';
+import { cleanupDb, insertCategory, insertExpense } from './utils';
 
 export const test = base.extend({
   page: async ({ page }, use, testInfo: TestInfo) => {
     await cleanupDb();
     await insertExpense('2026-07-01T10:00:00Z', 'Migros Zurich', 'Groceries', 42.5, 'CHF', 'Card payment', 'Expense');
     await insertExpense('2026-07-03T10:00:00Z', 'SBB Ticket', 'Transport', 12.8, 'CHF', 'Direct payment', 'Expense');
+    await insertCategory('Groceries');
+    await insertCategory('Transport');
+    await insertCategory('Restaurants');
 
     // Capture browser console logs
     const consoleLogs: string[] = [];

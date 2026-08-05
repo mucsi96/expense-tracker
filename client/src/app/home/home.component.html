@@ -28,9 +28,16 @@
     <li class="expense-item">
       <div class="expense-details">
         <span class="expense-description">{{ expense.description }}</span>
-        <span class="expense-meta"
-          >{{ expense.category }} · {{ expense.method }}</span
-        >
+        <span class="expense-meta">
+          <button
+            class="category-chip"
+            [attr.aria-label]="'Change category: ' + categoryLabel(expense)"
+            (click)="changeCategory(expense)"
+          >
+            {{ categoryLabel(expense) }}
+          </button>
+          · {{ expense.method }}
+        </span>
       </div>
       <div class="expense-amounts">
         <span class="expense-amount" [class.income]="isIncome(expense)">{{

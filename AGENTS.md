@@ -105,6 +105,15 @@ cd test && npx playwright test --ui  # Interactive test runner
 - `GET /api/environment` - Client configuration (public)
 - `GET /api/expenses` - List expenses (authenticated)
 - `DELETE /api/expenses` - Delete all expenses (authenticated)
+- `PUT /api/expenses/{id}/category` - Assign an existing category to an
+  expense (authenticated; unknown categories are rejected with 422)
+- `GET /api/categories` - List categories sorted by name (authenticated)
+- `POST /api/categories` - Create a category (authenticated; duplicate names
+  are rejected with 409)
+- `PUT /api/categories/{id}` - Rename a category and update all expenses
+  using the old name (authenticated)
+- `DELETE /api/categories/{id}` - Delete a category; expenses keep their
+  category text (authenticated)
 - `POST /api/bank-notifications` - Receive a bank card notification email from
   the Cloudflare email worker (bearer-token authenticated, see below)
 
@@ -112,6 +121,11 @@ cd test && npx playwright test --ui  # Interactive test runner
 
 - **expenses** - Stores expenses (date, description, location, category,
   amount, currency, converted_amount, base_currency, method, type, comment)
+- **categories** - Stores the category names offered when assigning
+  transactions (name, unique). Expenses reference categories by name, not by
+  foreign key; renaming a category rewrites the name on its expenses. The
+  table is managed on the mobile-first `/settings/categories` route, and the
+  home route assigns a category to a transaction via a bottom sheet.
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).

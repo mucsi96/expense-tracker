@@ -10,10 +10,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.github.mucsi96.expensetracker.entity.Expense;
 import io.github.mucsi96.expensetracker.model.ExpenseResponse;
+import io.github.mucsi96.expensetracker.repository.CategoryRepository;
 import io.github.mucsi96.expensetracker.repository.ExpenseRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ExpenseService {
   private final ExpenseRepository expenseRepository;
+  private final CategoryRepository categoryRepository;
 
   public List<ExpenseResponse> getExpenses() {
     return expenseRepository.findAll().stream()
@@ -32,6 +37,17 @@ public class ExpenseService {
 
   public void deleteAllExpenses() {
     expenseRepository.deleteAllInBatch();
+  }
+
+  @Transactional
+  public ExpenseResponse updateCategory(Long id, String category) {
+    if (!categoryRepository.existsByName(category)) {
+      throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Unknown category: " + category);
+    }
+    Expense expense = expenseRepository.findById(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Expense not found"));
+    expense.setCategory(category);
+    return toResponse(expense);
   }
 
   public int importExpenses(List<Expense> expenses) {
