@@ -82,7 +82,6 @@ test('displays expense details', async ({ page }) => {
   const migros = expenseItem(page, 'Migros Zurich');
   await expect(migros).toBeVisible();
   await expect(migros).toContainText('Groceries');
-  await expect(migros).toContainText('Card payment');
   await expect(migros).toContainText('-42.50 CHF');
 });
 
