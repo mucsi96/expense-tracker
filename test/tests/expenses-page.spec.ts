@@ -146,6 +146,45 @@ test('total spend uses converted amounts for foreign currency expenses', async (
   await expect(page.getByText('Spent 74.30 CHF')).toBeVisible();
 });
 
+test('lists uncategorized transactions separately above the month filter', async ({ page }) => {
+  await insertExpense('2026-06-20T10:00:00Z', 'Unknown Shop', '', 9.9, 'CHF', 'Card payment', 'Expense');
+  await page.goto('/');
+
+  const uncategorized = page.getByRole('region', { name: 'Uncategorized' });
+  const unknownShop = uncategorized
+    .getByRole('listitem')
+    .filter({ hasText: 'Unknown Shop' });
+  await expect(unknownShop).toBeVisible();
+  await expect(uncategorized).toContainText('Sat, Jun 20, 2026');
+
+  // The section renders above the month filter
+  const sectionBox = await uncategorized.boundingBox();
+  const monthFilterBox = await page
+    .getByRole('radio', { name: 'All' })
+    .boundingBox();
+  expect(sectionBox!.y).toBeLessThan(monthFilterBox!.y);
+});
+
+test('shows uncategorized transactions regardless of the selected month and not in the main list', async ({ page }) => {
+  await insertExpense('2026-06-20T10:00:00Z', 'Unknown Shop', '', 9.9, 'CHF', 'Card payment', 'Expense');
+  await page.goto('/');
+
+  const uncategorized = page.getByRole('region', { name: 'Uncategorized' });
+
+  // Visible while a different month (Jul 2026) is selected
+  await selectMonth(page, 'Jul 2026');
+  await expect(
+    uncategorized.getByRole('listitem').filter({ hasText: 'Unknown Shop' })
+  ).toBeVisible();
+
+  // With its own month selected it appears only in the uncategorized list
+  await selectMonth(page, 'Jun 2026');
+  await expect(expenseItem(page, 'Unknown Shop')).toHaveCount(1);
+  await expect(
+    uncategorized.getByRole('listitem').filter({ hasText: 'Unknown Shop' })
+  ).toBeVisible();
+});
+
 test('displays monthly spending by category chart', async ({ page }) => {
   await page.goto('/');
   const chartSection = page.getByRole('region', {
