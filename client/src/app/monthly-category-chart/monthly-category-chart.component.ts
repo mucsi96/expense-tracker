@@ -77,6 +77,7 @@ export class MonthlyCategoryChartComponent {
         axisPointer: {
           type: 'shadow',
         },
+        valueFormatter: (value) => (value as number).toFixed(2),
       },
       grid: {
         top: 50,
