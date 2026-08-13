@@ -152,6 +152,23 @@ reporting currency (CHF by default, configurable via
 converted amount so mixed currencies aggregate correctly, while duplicate
 detection uses the original amount.
 
+## Transaction List Filters
+
+The home route filters the transaction list by month and by category. Both
+filters live in the URL query (`?month=yyyy-MM&category=<name>`, month
+defaulting to the current one and `all` listing every month), so a filtered
+view survives a reload and can be shared. A category is picked straight from
+the monthly chart - by tapping a stacked bar segment, a category in the
+legend, or a row in the chart tooltip. A bar segment or tooltip row also
+selects the month it belongs to; the legend spans every month and keeps the
+selected one. The active category is shown as a chip above the month filter
+that clears the filter when tapped, next to the number of matching
+transactions, and the total spend follows both filters. Category picks push a
+history entry so the back gesture returns to the unfiltered list, while month
+switches replace it. Uncategorized transactions are hidden while a category is
+selected, and they are left out of the chart entirely - every category in the
+chart is one the list can be filtered by.
+
 ## Bank Notifications
 
 A Cloudflare Email Worker receives bank card notification emails and forwards

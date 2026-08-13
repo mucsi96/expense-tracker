@@ -25,6 +25,53 @@
   margin-bottom: 0.5rem;
 }
 
+/* Active quick filter: full-width on phones so the drill-down is obvious and
+   easy to undo with a thumb */
+.category-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.category-filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.5rem 0 0.875rem;
+  font: inherit;
+  font-weight: 500;
+  color: var(--bt-text-strong);
+  background: color-mix(in srgb, var(--bt-text-strong) 12%, transparent);
+  border: 1px solid var(--bt-text-strong);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.category-filter-name {
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.category-filter-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bt-text-strong) 20%, transparent);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.category-filter-count {
+  color: var(--bt-text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
 .month-options {
   min-width: 0;
   overflow-x: auto;
