@@ -28,6 +28,15 @@ const tooltipRow = (page: Page, category: string) =>
 const filterChip = (page: Page, category: string) =>
   page.getByRole('button', { name: `Clear category filter: ${category}` });
 
+// A filtered URL opened while signed out arrives without its query: the login
+// redirect returns to the origin. Deep-link tests therefore sign in first, and
+// wait for the session before navigating - a bare goto('/') resolves while the
+// app is still bootstrapping.
+const signIn = async (page: Page) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'TU' })).toBeVisible();
+};
+
 // Opens the axis tooltip over the month at the given share of the chart width
 const showTooltip = async (page: Page, widthShare = 0.5) => {
   const box = (await chartCanvas(page).boundingBox())!;
@@ -166,9 +175,7 @@ test.describe('URL', () => {
 
   test('restores the filters from the URL', async ({ page }) => {
     await insertExpense('2026-06-15T10:00:00Z', 'Alps Hotel', 'Travel', 250, 'CHF', 'Card payment', 'Expense');
-    // Signed in first: the login redirect returns to the origin, so a filtered
-    // URL opened while signed out arrives without its query
-    await page.goto('/');
+    await signIn(page);
     await page.goto('/?month=2026-06&category=Travel');
 
     await expect(filterChip(page, 'Travel')).toBeVisible();
@@ -180,7 +187,7 @@ test.describe('URL', () => {
   test('drops the category from the URL when the filter is cleared', async ({
     page,
   }) => {
-    await page.goto('/');
+    await signIn(page);
     await page.goto('/?month=2026-07&category=Transport');
 
     await filterChip(page, 'Transport').click();
