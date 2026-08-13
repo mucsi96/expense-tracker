@@ -5,7 +5,7 @@
 @if (expenses.isLoading()) {
 <bt-bar-loader class="page-loading" label="Loading expenses" />
 } @else {
-<app-monthly-category-chart />
+<app-monthly-category-chart (categorySelected)="applyCategoryFilter($event)" />
 @if (uncategorizedDays().length) {
 <section class="uncategorized" aria-label="Uncategorized">
   <h2 class="uncategorized-heading">Uncategorized</h2>
@@ -26,13 +26,32 @@
   }
 </section>
 }
+@if (selectedCategory(); as category) {
+<div class="category-filter" role="status" aria-label="Category filter">
+  <button
+    type="button"
+    class="category-filter-chip"
+    [attr.aria-label]="'Clear category filter: ' + category"
+    (click)="clearCategoryFilter()"
+  >
+    @if (selectedCategoryEmoji()) {
+    <span class="category-filter-emoji" aria-hidden="true">{{
+      selectedCategoryEmoji()
+    }}</span>
+    }
+    <span class="category-filter-name">{{ category }}</span>
+    <span class="category-filter-clear" aria-hidden="true">✕</span>
+  </button>
+  <span class="category-filter-count">{{ matchCountLabel() }}</span>
+</div>
+}
 <div class="month-filter">
   <div class="month-options">
     <mat-button-toggle-group
       aria-label="Filter by month"
       hideSingleSelectionIndicator
       [value]="selectedMonth()"
-      (change)="selectedMonth.set($event.value)"
+      (change)="selectMonth($event.value)"
     >
       @for (option of monthOptions(); track option.key) {
       <mat-button-toggle [value]="option.key">{{ option.label }}</mat-button-toggle>
@@ -63,7 +82,13 @@
 </section>
   }
 } @else if (expenses.value()?.length) {
+  @if (selectedCategory(); as category) {
+<p class="empty-state">
+  No {{ category }} transactions in {{ selectedMonthLabel() }}.
+</p>
+  } @else {
 <p class="empty-state">No transactions in {{ selectedMonthLabel() }}.</p>
+  }
 } @else {
 <p class="empty-state">
   No expenses yet. Card payments show up here automatically when bank

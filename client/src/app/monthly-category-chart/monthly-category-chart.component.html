@@ -10,6 +10,9 @@
       echarts
       [options]="chart"
       [initOpts]="initOpts"
+      (chartInit)="onChartInit($event)"
+      (chartClick)="onChartClick($event)"
+      (chartLegendSelectChanged)="onLegendSelectChanged($event)"
     ></div>
   </div>
 </section>

@@ -1,11 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   MatBottomSheet,
   MatBottomSheetModule,
 } from '@angular/material/bottom-sheet';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   BarLoaderComponent,
@@ -13,7 +15,10 @@ import {
 } from '@mucsi96/angular-material-theme';
 import { Category, CategoryService } from '../category.service';
 import { Expense, ExpenseService } from '../expense.service';
-import { MonthlyCategoryChartComponent } from '../monthly-category-chart/monthly-category-chart.component';
+import {
+  CategoryFilter,
+  MonthlyCategoryChartComponent,
+} from '../monthly-category-chart/monthly-category-chart.component';
 import { currentMonthKey, toMonthKey, toMonthLabel } from '../utils/month';
 import { CategoryPickerSheetComponent } from './category-picker-sheet.component';
 
@@ -81,6 +86,8 @@ export class HomeComponent {
   private readonly categoryService = inject(CategoryService);
   private readonly notifications = inject(NotificationsService);
   private readonly bottomSheet = inject(MatBottomSheet);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly expenses = this.expenseService.expenses;
 
   private readonly categoriesByName = computed<Map<string, Category>>(
@@ -93,8 +100,20 @@ export class HomeComponent {
       )
   );
 
+  // The URL is the single source of truth for both filters, so a filtered view
+  // survives a reload and can be shared
+  private readonly queryParams = toSignal(this.route.queryParamMap, {
+    initialValue: this.route.snapshot.queryParamMap,
+  });
+
   // 'all' or a 'yyyy-MM' month key; only the current month is listed by default
-  readonly selectedMonth = signal<string>(currentMonthKey());
+  readonly selectedMonth = computed<string>(
+    () => this.queryParams().get('month') ?? currentMonthKey()
+  );
+
+  readonly selectedCategory = computed<string | null>(() =>
+    this.queryParams().get('category')
+  );
 
   readonly monthOptions = computed<MonthOption[]>(() => {
     const monthKeys = (this.expenses.value() ?? []).flatMap((expense) =>
@@ -107,25 +126,36 @@ export class HomeComponent {
 
   private readonly filteredExpenses = computed<Expense[]>(() => {
     const month = this.selectedMonth();
+    const category = this.selectedCategory();
     return (this.expenses.value() ?? []).filter(
       (expense) =>
-        month === 'all' || (expense.date && toMonthKey(expense.date) === month)
+        (month === 'all' ||
+          (expense.date && toMonthKey(expense.date) === month)) &&
+        (category === null || expense.category === category)
     );
   });
 
   // Uncategorized transactions are listed separately above the month filter,
-  // regardless of the selected month
+  // regardless of the selected month. Filtering by a category hides them, as
+  // they are by definition not part of that category.
   readonly uncategorizedDays = computed<ExpenseDay[]>(() =>
-    groupByDay(
-      (this.expenses.value() ?? []).filter(
-        (expense) => !hasCategory(expense)
-      )
-    )
+    this.selectedCategory() !== null
+      ? []
+      : groupByDay(
+          (this.expenses.value() ?? []).filter(
+            (expense) => !hasCategory(expense)
+          )
+        )
   );
 
   readonly days = computed<ExpenseDay[]>(() =>
     groupByDay(this.filteredExpenses().filter(hasCategory))
   );
+
+  readonly matchCountLabel = computed<string>(() => {
+    const count = this.filteredExpenses().length;
+    return `${count} ${count === 1 ? 'transaction' : 'transactions'}`;
+  });
 
   readonly totalSpend = computed<string>(() => {
     const baseCurrency = this.expenses.value()?.[0]?.baseCurrency;
@@ -148,6 +178,39 @@ export class HomeComponent {
     const month = this.selectedMonth();
     return month === 'all' ? 'any month' : toMonthLabel(month);
   });
+
+  readonly selectedCategoryEmoji = computed<string>(
+    () => this.categoriesByName().get(this.selectedCategory()!)?.emoji ?? ''
+  );
+
+  selectMonth(month: string): void {
+    // Months are browsed back and forth, so they replace the URL instead of
+    // stacking up history entries
+    this.applyFilters(month, this.selectedCategory(), true);
+  }
+
+  // A category filter is a drill-down: it gets its own history entry so the
+  // back gesture returns to the full list
+  applyCategoryFilter({ month, category }: CategoryFilter): void {
+    // A pick without a month (the legend) keeps the month in view
+    this.applyFilters(month ?? this.selectedMonth(), category, false);
+  }
+
+  clearCategoryFilter(): void {
+    this.applyFilters(this.selectedMonth(), null, false);
+  }
+
+  private applyFilters(
+    month: string,
+    category: string | null,
+    replaceUrl: boolean
+  ): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { month, category },
+      replaceUrl,
+    });
+  }
 
   isIncome(expense: Expense): boolean {
     return expense.type === 'Income';
