@@ -33,6 +33,11 @@ export class ExpenseService {
     this.expenses.reload();
   }
 
+  async dropExpense(expenseId: number): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`/api/expenses/${expenseId}`));
+    this.expenses.reload();
+  }
+
   async setCategory(expenseId: number, category: string): Promise<void> {
     await firstValueFrom(
       this.http.put<Expense>(`/api/expenses/${expenseId}/category`, {

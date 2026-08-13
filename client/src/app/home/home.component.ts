@@ -5,6 +5,7 @@ import {
   MatBottomSheetModule,
 } from '@angular/material/bottom-sheet';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -15,7 +16,11 @@ import { Category, CategoryService } from '../category.service';
 import { Expense, ExpenseService } from '../expense.service';
 import { MonthlyCategoryChartComponent } from '../monthly-category-chart/monthly-category-chart.component';
 import { currentMonthKey, toMonthKey, toMonthLabel } from '../utils/month';
-import { CategoryPickerSheetComponent } from './category-picker-sheet.component';
+import {
+  CategoryPickerResult,
+  CategoryPickerSheetComponent,
+} from './category-picker-sheet.component';
+import { DropConfirmationDialogComponent } from './drop-confirmation-dialog.component';
 
 type ExpenseDay = {
   day: string;
@@ -69,6 +74,7 @@ const isForeign = (expense: Expense): boolean =>
     BarLoaderComponent,
     MatBottomSheetModule,
     MatButtonToggleModule,
+    MatDialogModule,
     MatTooltipModule,
     MonthlyCategoryChartComponent,
     NgTemplateOutlet,
@@ -81,6 +87,7 @@ export class HomeComponent {
   private readonly categoryService = inject(CategoryService);
   private readonly notifications = inject(NotificationsService);
   private readonly bottomSheet = inject(MatBottomSheet);
+  private readonly dialog = inject(MatDialog);
   readonly expenses = this.expenseService.expenses;
 
   private readonly categoriesByName = computed<Map<string, Category>>(
@@ -182,18 +189,49 @@ export class HomeComponent {
     return this.categoriesByName().get(expense.category)?.description ?? '';
   }
 
-  async changeCategory(expense: Expense): Promise<void> {
-    const category = await firstValueFrom(
-      this.bottomSheet.open(CategoryPickerSheetComponent).afterDismissed()
+  async openCategoryPicker(expense: Expense): Promise<void> {
+    const result = await firstValueFrom(
+      this.bottomSheet
+        .open<CategoryPickerSheetComponent, void, CategoryPickerResult>(
+          CategoryPickerSheetComponent
+        )
+        .afterDismissed()
     );
-    if (!category || category === expense.category) {
+    if (!result) {
+      return;
+    }
+
+    if (result.action === 'drop') {
+      await this.dropExpense(expense);
+      return;
+    }
+
+    if (result.category === expense.category) {
       return;
     }
 
     try {
-      await this.expenseService.setCategory(expense.id, category);
+      await this.expenseService.setCategory(expense.id, result.category);
     } catch {
       this.notifications.error('Failed to update category');
+    }
+  }
+
+  private async dropExpense(expense: Expense): Promise<void> {
+    const confirmed = await firstValueFrom(
+      this.dialog
+        .open(DropConfirmationDialogComponent, { data: expense.description })
+        .afterClosed()
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await this.expenseService.dropExpense(expense.id);
+      this.notifications.success('Transaction dropped');
+    } catch {
+      this.notifications.error('Failed to drop transaction');
     }
   }
 }

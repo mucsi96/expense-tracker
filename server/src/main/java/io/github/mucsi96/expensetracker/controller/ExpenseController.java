@@ -32,6 +32,12 @@ public class ExpenseController {
     expenseService.deleteAllExpenses();
   }
 
+  @DeleteMapping("/expenses/{id}")
+  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_deleteExpenses')")
+  public void deleteExpense(@PathVariable Long id) {
+    expenseService.deleteExpense(id);
+  }
+
   @PutMapping("/expenses/{id}/category")
   @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_createExpenses')")
   public ExpenseResponse updateCategory(@PathVariable Long id, @RequestBody ExpenseCategoryRequest request) {

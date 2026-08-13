@@ -44,6 +44,16 @@ public class ExpenseService {
   }
 
   /**
+   * Drops a single transaction, e.g. one that should not be tracked at all
+   * instead of being categorized.
+   */
+  public void deleteExpense(Long id) {
+    Expense expense = expenseRepository.findById(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Expense not found"));
+    expenseRepository.delete(expense);
+  }
+
+  /**
    * Assigns a category to an expense and binds it to the expense's merchant
    * (the description): every other expense at the same merchant is
    * re-categorized too, and the binding is applied to future imports.

@@ -1,13 +1,18 @@
 import { Component, inject } from '@angular/core';
 import { MatBottomSheetRef } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { BarLoaderComponent } from '@mucsi96/angular-material-theme';
 import { CategoryService } from '../category.service';
 
+export type CategoryPickerResult =
+  | { action: 'assign'; category: string }
+  | { action: 'drop' };
+
 @Component({
   selector: 'app-category-picker-sheet',
-  imports: [BarLoaderComponent, MatButtonModule, RouterLink],
+  imports: [BarLoaderComponent, MatButtonModule, MatIconModule, RouterLink],
   template: `
     <h2 class="sheet-title">Choose category</h2>
     @if (categories.isLoading()) {
@@ -43,6 +48,10 @@ import { CategoryService } from '../category.service';
       </li>
       }
     </ul>
+    <button mat-button class="drop-option" (click)="drop()">
+      <mat-icon>delete_outline</mat-icon>
+      Drop transaction
+    </button>
     }
   `,
   styles: `
@@ -86,6 +95,16 @@ import { CategoryService } from '../category.service';
       white-space: normal;
     }
 
+    .drop-option {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--bt-outline);
+      border-radius: 0;
+      color: var(--bt-error);
+      justify-content: flex-start;
+    }
+
     .sheet-loading {
       display: flex;
       justify-content: center;
@@ -100,11 +119,17 @@ import { CategoryService } from '../category.service';
 })
 export class CategoryPickerSheetComponent {
   private readonly sheetRef =
-    inject<MatBottomSheetRef<CategoryPickerSheetComponent>>(MatBottomSheetRef);
+    inject<MatBottomSheetRef<CategoryPickerSheetComponent, CategoryPickerResult>>(
+      MatBottomSheetRef
+    );
   readonly categories = inject(CategoryService).categories;
 
-  select(name: string): void {
-    this.sheetRef.dismiss(name);
+  select(category: string): void {
+    this.sheetRef.dismiss({ action: 'assign', category });
+  }
+
+  drop(): void {
+    this.sheetRef.dismiss({ action: 'drop' });
   }
 
   dismiss(): void {

@@ -80,7 +80,7 @@
         class="category-chip"
         [attr.aria-label]="'Change category: ' + categoryLabel(expense)"
         [matTooltip]="categoryDescription(expense)"
-        (click)="changeCategory(expense)"
+        (click)="openCategoryPicker(expense)"
       >
         @if (categoryEmoji(expense)) {
         <span class="category-emoji" aria-hidden="true">{{
