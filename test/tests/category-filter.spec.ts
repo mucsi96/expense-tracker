@@ -166,6 +166,9 @@ test.describe('URL', () => {
 
   test('restores the filters from the URL', async ({ page }) => {
     await insertExpense('2026-06-15T10:00:00Z', 'Alps Hotel', 'Travel', 250, 'CHF', 'Card payment', 'Expense');
+    // Signed in first: the login redirect returns to the origin, so a filtered
+    // URL opened while signed out arrives without its query
+    await page.goto('/');
     await page.goto('/?month=2026-06&category=Travel');
 
     await expect(filterChip(page, 'Travel')).toBeVisible();
@@ -177,6 +180,7 @@ test.describe('URL', () => {
   test('drops the category from the URL when the filter is cleared', async ({
     page,
   }) => {
+    await page.goto('/');
     await page.goto('/?month=2026-07&category=Transport');
 
     await filterChip(page, 'Transport').click();
