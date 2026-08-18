@@ -31,6 +31,7 @@ export type CategoryFilter = {
 
 type MonthlySpending = {
   months: string[];
+  // Ordered by overall spending, largest category first
   categories: string[];
   totals: ReadonlyMap<string, number>;
 };
@@ -65,9 +66,18 @@ function computeMonthlySpending(expenses: Expense[]): MonthlySpending {
     const key = `${toMonthKey(expense.date!)}|${expense.category}`;
     return acc.set(key, (acc.get(key) ?? 0) + expense.convertedAmount!);
   }, new Map<string, number>());
-  const categories = [
-    ...new Set(spendings.map((expense) => expense.category)),
-  ].sort();
+  const categoryTotals = spendings.reduce(
+    (acc, expense) =>
+      acc.set(
+        expense.category,
+        (acc.get(expense.category) ?? 0) + expense.convertedAmount!
+      ),
+    new Map<string, number>()
+  );
+  const categories = [...categoryTotals.keys()].sort(
+    (a, b) =>
+      categoryTotals.get(b)! - categoryTotals.get(a)! || a.localeCompare(b)
+  );
   return { months, categories, totals };
 }
 
@@ -79,10 +89,13 @@ const renderTooltipRow = (item: TooltipItem): string =>
   `<span class="chart-tooltip-name">${escapeHtml(item.seriesName)}</span>` +
   `<span class="chart-tooltip-value">${item.value.toFixed(2)}</span></button>`;
 
+// Rows read the stack top-down: series arrive smallest first (stacking
+// order), so they are reversed to lead with the largest category
 const renderTooltip = (items: TooltipItem[]): string =>
   `<div class="chart-tooltip-title">${escapeHtml(items[0].axisValue)}</div>` +
   items
     .filter((item) => item.value > 0)
+    .reverse()
     .map(renderTooltipRow)
     .join('');
 
@@ -128,6 +141,9 @@ export class MonthlyCategoryChartComponent {
       },
       legend: {
         top: 0,
+        // Series are stacked smallest first, so the legend lists the
+        // categories explicitly to lead with the largest one
+        data: categories,
         // Single scrollable row keeps the legend from eating chart height on
         // narrow screens
         type: 'scroll',
@@ -188,7 +204,9 @@ export class MonthlyCategoryChartComponent {
           },
         },
       },
-      series: categories.map((category) => ({
+      // Bars stack bottom-up in series order, so the order is reversed to put
+      // the category with the largest spending on top of the stack
+      series: [...categories].reverse().map((category) => ({
         name: category,
         type: 'bar',
         stack: 'total',
