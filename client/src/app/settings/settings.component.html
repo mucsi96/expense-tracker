@@ -3,6 +3,35 @@
 </div>
 
 <section class="settings-section">
+  <h2>Monthly closing day</h2>
+  <p>
+    Monthly expenses are collected up to this day of the month; transactions
+    after it count towards the next month. Set 31 to use calendar months.
+  </p>
+  <form class="closing-day-form" (ngSubmit)="saveClosingDay()">
+    <mat-form-field class="closing-day-field">
+      <mat-label>Closing day</mat-label>
+      <input
+        matInput
+        type="number"
+        name="closingDay"
+        min="1"
+        max="31"
+        required
+        [(ngModel)]="closingDay"
+      />
+    </mat-form-field>
+    <button
+      mat-flat-button
+      type="submit"
+      [disabled]="!closingDayValid() || savingClosingDay()"
+    >
+      Save
+    </button>
+  </form>
+</section>
+
+<section class="settings-section">
   <h2>Categories</h2>
   <p>Manage the categories used to group your transactions.</p>
   <a mat-flat-button routerLink="/settings/categories">Manage categories</a>

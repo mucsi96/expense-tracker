@@ -34,6 +34,21 @@
   }
 }
 
+.closing-day-form {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.closing-day-field {
+  width: 8rem;
+}
+
+.closing-day-form button {
+  min-height: 44px;
+}
+
 .danger-zone {
   border: 1px solid hsl(0, 65%, 45%);
   border-radius: 8px;

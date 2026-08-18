@@ -118,6 +118,10 @@ cd test && npx playwright test --ui  # Interactive test runner
   (authenticated)
 - `DELETE /api/categories/{id}` - Delete a category; expenses keep their
   category text (authenticated)
+- `GET /api/settings` - App settings, currently the monthly closing day
+  (authenticated)
+- `PUT /api/settings` - Update the settings; a closing day outside 1-31 is
+  rejected with 400 (authenticated)
 - `POST /api/bank-notifications` - Receive a bank card notification email from
   the Cloudflare email worker (bearer-token authenticated, see below)
 
@@ -142,6 +146,12 @@ cd test && npx playwright test --ui  # Interactive test runner
   table was seeded from merchants whose existing expenses all share one
   category.
 
+- **settings** - Single row of app settings, seeded by the migration. Holds
+  the monthly closing day (default 31): a monthly period ends on that day of
+  the month, transactions after it count towards the next month, and the
+  period is named after the month it closes in. 31 covers every month end,
+  i.e. plain calendar months. Edited on the `/settings` route.
+
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).
 
@@ -154,7 +164,10 @@ detection uses the original amount.
 
 ## Transaction List Filters
 
-The home route filters the transaction list by month and by category. Both
+The home route filters the transaction list by month and by category. Months
+are closing periods, not necessarily calendar months: the configurable
+closing day (see the settings table) decides which month a transaction
+belongs to, and the chart groups spending the same way. Both
 filters live in the URL query (`?month=yyyy-MM&category=<name>`, month
 defaulting to the current one and `all` listing every month), so a filtered
 view survives a reload and can be shared. A category is picked straight from

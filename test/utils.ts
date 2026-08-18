@@ -21,6 +21,17 @@ export async function cleanupDb() {
   await query('DELETE FROM expensetracker.expenses');
   await query('DELETE FROM expensetracker.categories');
   await query('DELETE FROM expensetracker.merchant_categories');
+  // Back to calendar months (the migration-seeded default)
+  await query('UPDATE expensetracker.settings SET closing_day = 31');
+}
+
+export async function setClosingDay(day: number) {
+  await query('UPDATE expensetracker.settings SET closing_day = $1', [day]);
+}
+
+export async function getSettings() {
+  const result = await query('SELECT * FROM expensetracker.settings');
+  return result.rows[0];
 }
 
 export async function insertMerchantCategory(merchant: string, category: string) {

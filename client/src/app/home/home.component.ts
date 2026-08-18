@@ -15,6 +15,7 @@ import {
 } from '@mucsi96/angular-material-theme';
 import { Category, CategoryService } from '../category.service';
 import { Expense, ExpenseService } from '../expense.service';
+import { SettingsService } from '../settings.service';
 import {
   CategoryFilter,
   MonthlyCategoryChartComponent,
@@ -84,11 +85,20 @@ const isForeign = (expense: Expense): boolean =>
 export class HomeComponent {
   private readonly expenseService = inject(ExpenseService);
   private readonly categoryService = inject(CategoryService);
+  private readonly settingsService = inject(SettingsService);
   private readonly notifications = inject(NotificationsService);
   private readonly bottomSheet = inject(MatBottomSheet);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly expenses = this.expenseService.expenses;
+
+  // Grouping expenses into months needs the closing day, so the page waits
+  // for the settings alongside the expenses
+  readonly loading = computed<boolean>(
+    () => this.expenses.isLoading() || this.settingsService.settings.isLoading()
+  );
+
+  private readonly closingDay = this.settingsService.closingDay;
 
   private readonly categoriesByName = computed<Map<string, Category>>(
     () =>
@@ -106,31 +116,46 @@ export class HomeComponent {
     initialValue: this.route.snapshot.queryParamMap,
   });
 
-  // 'all' or a 'yyyy-MM' month key; only the current month is listed by default
-  readonly selectedMonth = computed<string>(
-    () => this.queryParams().get('month') ?? currentMonthKey()
-  );
+  // 'all' or a 'yyyy-MM' month key; only the current month is listed by
+  // default. Empty until the closing day arrives - the page renders nothing
+  // while loading anyway.
+  readonly selectedMonth = computed<string>(() => {
+    const month = this.queryParams().get('month');
+    if (month) {
+      return month;
+    }
+    const closingDay = this.closingDay();
+    return closingDay === undefined ? '' : currentMonthKey(closingDay);
+  });
 
   readonly selectedCategory = computed<string | null>(() =>
     this.queryParams().get('category')
   );
 
   readonly monthOptions = computed<MonthOption[]>(() => {
+    const closingDay = this.closingDay();
+    if (closingDay === undefined) {
+      return [];
+    }
     const monthKeys = (this.expenses.value() ?? []).flatMap((expense) =>
-      expense.date ? [toMonthKey(expense.date)] : []
+      expense.date ? [toMonthKey(expense.date, closingDay)] : []
     );
-    return [...new Set([currentMonthKey(), ...monthKeys])]
+    return [...new Set([currentMonthKey(closingDay), ...monthKeys])]
       .sort((a, b) => b.localeCompare(a))
       .map((key) => ({ key, label: toMonthLabel(key) }));
   });
 
   private readonly filteredExpenses = computed<Expense[]>(() => {
+    const closingDay = this.closingDay();
+    if (closingDay === undefined) {
+      return [];
+    }
     const month = this.selectedMonth();
     const category = this.selectedCategory();
     return (this.expenses.value() ?? []).filter(
       (expense) =>
         (month === 'all' ||
-          (expense.date && toMonthKey(expense.date) === month)) &&
+          (expense.date && toMonthKey(expense.date, closingDay) === month)) &&
         (category === null || expense.category === category)
     );
   });

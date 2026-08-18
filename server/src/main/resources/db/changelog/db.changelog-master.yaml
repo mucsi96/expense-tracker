@@ -131,3 +131,24 @@ databaseChangeLog:
               AND category IS NOT NULL AND category <> ''
               GROUP BY description
               HAVING COUNT(DISTINCT category) = 1
+  - changeSet:
+      id: 6-create-settings-table
+      author: mucsi96
+      changes:
+        - createTable:
+            tableName: settings
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: closing_day
+                  type: integer
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >-
+              INSERT INTO expensetracker.settings (closing_day) VALUES (31)
