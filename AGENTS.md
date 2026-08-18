@@ -171,10 +171,11 @@ belongs to, and the chart groups spending the same way. Both
 filters live in the URL query (`?month=yyyy-MM&category=<name>`, month
 defaulting to the current one and `all` listing every month), so a filtered
 view survives a reload and can be shared. A category is picked straight from
-the monthly chart - by tapping a stacked bar segment, a category in the
-legend, or a row in the chart tooltip. A bar segment or tooltip row also
-selects the month it belongs to; the legend spans every month and keeps the
-selected one. The active category is shown as a chip above the month filter
+the monthly chart - by tapping a stacked bar segment or a category in the
+legend. A bar segment also selects the month it belongs to; the legend spans
+every month and keeps the selected one. Hovering a bar segment shows a
+minimal, non-interactive tooltip with just that category's name and total
+for the month. The active category is shown as a chip above the month filter
 that clears the filter when tapped, next to the number of matching
 transactions, and the total spend follows both filters. Category picks push a
 history entry so the back gesture returns to the unfiltered list, while month

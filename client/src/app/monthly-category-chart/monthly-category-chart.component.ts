@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, inject, output } from '@angular/core';
+import { Component, computed, inject, output } from '@angular/core';
 import type { ECElementEvent, ECharts, EChartsOption } from 'echarts';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { Expense, ExpenseService } from '../expense.service';
@@ -16,9 +16,6 @@ const HTML_ESCAPES: Record<string, string> = {
   '"': '&quot;',
   "'": '&#39;',
 };
-
-const clamp = (value: number, max: number): number =>
-  Math.min(Math.max(0, value), Math.max(0, max));
 
 const escapeHtml = (value: string): string =>
   value.replace(/[&<>"']/g, (character) => HTML_ESCAPES[character]);
@@ -44,10 +41,7 @@ type LegendSelectChanged = {
 
 type TooltipItem = {
   seriesName: string;
-  dataIndex: number;
   value: number;
-  marker: string;
-  axisValue: string;
 };
 
 function computeMonthlySpending(
@@ -87,23 +81,9 @@ function computeMonthlySpending(
   return { months, categories, totals };
 }
 
-// Rows are buttons so tapping a category inside the tooltip filters the list
-const renderTooltipRow = (item: TooltipItem): string =>
-  `<button type="button" class="chart-tooltip-row" data-category="${escapeHtml(
-    item.seriesName
-  )}" data-month-index="${item.dataIndex}">${item.marker}` +
-  `<span class="chart-tooltip-name">${escapeHtml(item.seriesName)}</span>` +
-  `<span class="chart-tooltip-value">${item.value.toFixed(2)}</span></button>`;
-
-// Rows read the stack top-down: series arrive smallest first (stacking
-// order), so they are reversed to lead with the largest category
-const renderTooltip = (items: TooltipItem[]): string =>
-  `<div class="chart-tooltip-title">${escapeHtml(items[0].axisValue)}</div>` +
-  items
-    .filter((item) => item.value > 0)
-    .reverse()
-    .map(renderTooltipRow)
-    .join('');
+const renderTooltip = ({ seriesName, value }: TooltipItem): string =>
+  `<span class="chart-tooltip-name">${escapeHtml(seriesName)}</span>` +
+  `<span class="chart-tooltip-value">${value.toFixed(2)}</span>`;
 
 @Component({
   standalone: true,
@@ -162,25 +142,13 @@ export class MonthlyCategoryChartComponent {
         itemHeight: 14,
         itemGap: 16,
       },
+      // Minimal, non-interactive tooltip: only the hovered segment's category
+      // and its total; filtering happens by clicking the segment itself
       tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'shadow',
-        },
-        // Keeps the tooltip alive while the pointer (or finger) moves onto it
-        enterable: true,
-        // Pinned to the top of the chart instead of following the pointer: it
-        // stays inside the viewport on narrow screens and never covers the bar
-        // that was tapped
-        position: (point, _params, _dom, _rect, size) => [
-          clamp(
-            point[0] - size.contentSize[0] / 2,
-            size.viewSize[0] - size.contentSize[0]
-          ),
-          0,
-        ],
-        extraCssText: 'max-height: 60vh; overflow-y: auto;',
-        formatter: (params) => renderTooltip(params as unknown as TooltipItem[]),
+        trigger: 'item',
+        // Kept inside the chart so it never leaves the viewport on phones
+        confine: true,
+        formatter: (params) => renderTooltip(params as unknown as TooltipItem),
       },
       grid: {
         top: 50,
@@ -253,20 +221,6 @@ export class MonthlyCategoryChartComponent {
     }
     this.chart?.dispatchAction({ type: 'legendAllSelect' });
     this.selectCategory(null, name);
-  }
-
-  // The tooltip is plain DOM rendered by ECharts inside this component, so its
-  // rows are handled here instead of through a template binding
-  @HostListener('click', ['$event'])
-  onTooltipClick(event: MouseEvent): void {
-    const row = (event.target as HTMLElement).closest<HTMLElement>(
-      '.chart-tooltip-row'
-    );
-    if (!row) {
-      return;
-    }
-    const month = this.spending()!.months[Number(row.dataset['monthIndex'])];
-    this.selectCategory(month, row.dataset['category']!);
   }
 
   private selectCategory(month: string | null, category: string): void {
