@@ -2,6 +2,7 @@ import { Component, HostListener, computed, inject, output } from '@angular/core
 import type { ECElementEvent, ECharts, EChartsOption } from 'echarts';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { Expense, ExpenseService } from '../expense.service';
+import { SettingsService } from '../settings.service';
 import { toMonthKey, toMonthLabel } from '../utils/month';
 
 const TEXT_COLOR = 'hsl(220, 13%, 91%)';
@@ -49,7 +50,10 @@ type TooltipItem = {
   axisValue: string;
 };
 
-function computeMonthlySpending(expenses: Expense[]): MonthlySpending {
+function computeMonthlySpending(
+  expenses: Expense[],
+  closingDay: number
+): MonthlySpending {
   // Uncategorized spending is left out: every category in the chart is a
   // category the list can be filtered by, and it has no name to show
   const spendings = expenses.filter(
@@ -60,10 +64,12 @@ function computeMonthlySpending(expenses: Expense[]): MonthlySpending {
       expense.convertedAmount != null
   );
   const months = [
-    ...new Set(spendings.map((expense) => toMonthKey(expense.date!))),
+    ...new Set(
+      spendings.map((expense) => toMonthKey(expense.date!, closingDay))
+    ),
   ].sort();
   const totals = spendings.reduce((acc, expense) => {
-    const key = `${toMonthKey(expense.date!)}|${expense.category}`;
+    const key = `${toMonthKey(expense.date!, closingDay)}|${expense.category}`;
     return acc.set(key, (acc.get(key) ?? 0) + expense.convertedAmount!);
   }, new Map<string, number>());
   const categoryTotals = spendings.reduce(
@@ -108,6 +114,7 @@ const renderTooltip = (items: TooltipItem[]): string =>
 })
 export class MonthlyCategoryChartComponent {
   private readonly expenseService = inject(ExpenseService);
+  private readonly settingsService = inject(SettingsService);
   private chart?: ECharts;
 
   readonly categorySelected = output<CategoryFilter>();
@@ -116,10 +123,11 @@ export class MonthlyCategoryChartComponent {
 
   private readonly spending = computed<MonthlySpending | undefined>(() => {
     const expenses = this.expenseService.expenses.value();
-    if (!expenses) {
+    const closingDay = this.settingsService.closingDay();
+    if (!expenses || closingDay === undefined) {
       return undefined;
     }
-    const spending = computeMonthlySpending(expenses);
+    const spending = computeMonthlySpending(expenses, closingDay);
     return spending.months.length ? spending : undefined;
   });
 

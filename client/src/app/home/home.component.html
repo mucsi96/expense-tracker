@@ -2,7 +2,7 @@
   <h1>Expenses</h1>
 </div>
 
-@if (expenses.isLoading()) {
+@if (loading()) {
 <bt-bar-loader class="page-loading" label="Loading expenses" />
 } @else {
 <app-monthly-category-chart (categorySelected)="applyCategoryFilter($event)" />
