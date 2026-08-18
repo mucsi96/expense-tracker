@@ -219,29 +219,27 @@ test('orders chart categories by spending with the largest first', async ({ page
     .getByText('Groceries', { exact: true })
     .boundingBox())!;
   expect(transportBox.x).toBeLessThan(groceriesBox.x);
-
-  // The tooltip reads the stack top-down: largest category first
-  await chartSection.getByRole('img', { name: /This is a chart/ }).hover();
-  const tooltipRows = chartSection.locator('.chart-tooltip-row');
-  await expect(tooltipRows.first()).toContainText('Transport');
-  await expect(tooltipRows.last()).toContainText('Groceries');
 });
 
-test('chart tooltip shows amounts with two decimals', async ({ page }) => {
-  // 0.10 + 0.20 sums to 0.30000000000000004 in floating point; the tooltip
-  // must format it as 0.30
-  await insertExpense('2026-07-05T10:00:00Z', 'Kiosk A', 'Snacks', 0.1, 'CHF', 'Card payment', 'Expense');
-  await insertExpense('2026-07-06T10:00:00Z', 'Kiosk B', 'Snacks', 0.2, 'CHF', 'Card payment', 'Expense');
+test('chart tooltip shows only the hovered category and its total', async ({ page }) => {
+  // 100.10 + 200.20 sums to 300.29999999999995 in floating point; the tooltip
+  // must format it as 300.30
+  await insertExpense('2026-07-05T10:00:00Z', 'Kiosk A', 'Snacks', 100.1, 'CHF', 'Card payment', 'Expense');
+  await insertExpense('2026-07-06T10:00:00Z', 'Kiosk B', 'Snacks', 200.2, 'CHF', 'Card payment', 'Expense');
   await page.goto('/');
 
   const chartSection = page.getByRole('region', {
     name: 'Monthly spending by category',
   });
+  // Snacks is by far the largest July category, so its segment tops the stack
+  // and covers the center of the chart where hover() points
   await chartSection.getByRole('img', { name: /This is a chart/ }).hover();
 
-  await expect(chartSection.getByText('0.30', { exact: true })).toBeVisible();
-  await expect(chartSection.getByText('42.50', { exact: true })).toBeVisible();
-  await expect(chartSection.getByText('12.80', { exact: true })).toBeVisible();
+  await expect(chartSection.locator('.chart-tooltip-name')).toHaveText('Snacks');
+  await expect(chartSection.locator('.chart-tooltip-value')).toHaveText('300.30');
+  // The other categories stay out of the tooltip
+  await expect(chartSection.getByText('42.50', { exact: true })).toHaveCount(0);
+  await expect(chartSection.getByText('12.80', { exact: true })).toHaveCount(0);
 });
 
 test.describe('mobile viewport', () => {

@@ -22,9 +22,6 @@ const chartCanvas = (page: Page) =>
 const legendItem = (page: Page, category: string) =>
   chart(page).getByText(category, { exact: true });
 
-const tooltipRow = (page: Page, category: string) =>
-  page.locator('.chart-tooltip-row').filter({ hasText: category });
-
 const filterChip = (page: Page, category: string) =>
   page.getByRole('button', { name: `Clear category filter: ${category}` });
 
@@ -37,30 +34,10 @@ const signIn = async (page: Page) => {
   await expect(page.getByRole('button', { name: 'TU' })).toBeVisible();
 };
 
-// Opens the axis tooltip over the month at the given share of the chart width
-const showTooltip = async (page: Page, widthShare = 0.5) => {
-  const box = (await chartCanvas(page).boundingBox())!;
-  await page.mouse.move(box.x + box.width * widthShare, box.y + box.height - 60);
-};
-
-test('filters the list by clicking a category in the chart tooltip', async ({
-  page,
-}) => {
-  await insertExpense('2026-07-08T10:00:00Z', 'Coop Bern', 'Groceries', 8.2, 'CHF', 'Card payment', 'Expense');
-  await page.goto('/');
-
-  await showTooltip(page);
-  await tooltipRow(page, 'Transport').click();
-
-  await expect(filterChip(page, 'Transport')).toBeVisible();
-  await expect(expenseItem(page, 'SBB Ticket')).toBeVisible();
-  await expect(expenseItem(page, 'Migros Zurich')).toHaveCount(0);
-  await expect(expenseItem(page, 'Coop Bern')).toHaveCount(0);
-});
-
 test('filters the list by clicking a bar segment in the chart', async ({
   page,
 }) => {
+  await insertExpense('2026-07-08T10:00:00Z', 'Coop Bern', 'Groceries', 8.2, 'CHF', 'Card payment', 'Expense');
   await page.goto('/');
 
   // The stack puts the largest category on top, so Transport (12.80 of the
@@ -72,6 +49,7 @@ test('filters the list by clicking a bar segment in the chart', async ({
   await expect(filterChip(page, 'Transport')).toBeVisible();
   await expect(expenseItem(page, 'SBB Ticket')).toBeVisible();
   await expect(expenseItem(page, 'Migros Zurich')).toHaveCount(0);
+  await expect(expenseItem(page, 'Coop Bern')).toHaveCount(0);
 });
 
 test('filters the list by clicking a category in the chart legend', async ({
@@ -96,9 +74,10 @@ test('picking a category in the chart also selects its month', async ({
   await page.goto('/');
   await expect(expenseItem(page, 'Alps Hotel')).toHaveCount(0);
 
-  // June is the left of the two months
-  await showTooltip(page, 0.3);
-  await tooltipRow(page, 'Travel').click();
+  // June is the left of the two months, and its bar is a single tall Travel
+  // segment, so a click at mid-height lands inside it
+  const box = (await chartCanvas(page).boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.3, box.y + box.height / 2);
 
   await expect(page.getByRole('radio', { name: 'Jun 2026' })).toBeChecked();
   await expect(expenseItem(page, 'Alps Hotel')).toBeVisible();
@@ -243,34 +222,5 @@ test.describe('mobile viewport', () => {
 
     await chip.tap();
     await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
-  });
-
-  test('filters by tapping a category in the chart tooltip', async ({
-    page,
-  }) => {
-    // A tall June bar leaves empty space above the July bars, so the tooltip
-    // can be opened without tapping a segment
-    await insertExpense('2026-06-15T10:00:00Z', 'Alps Hotel', 'Travel', 250, 'CHF', 'Card payment', 'Expense');
-    await page.goto('/');
-
-    const box = (await chartCanvas(page).boundingBox())!;
-    await page.touchscreen.tap(box.x + box.width * 0.75, box.y + 90);
-
-    const row = tooltipRow(page, 'Transport');
-    await expect(row).toBeVisible();
-    const rowBox = (await row.boundingBox())!;
-    expect(rowBox.height).toBeGreaterThanOrEqual(44);
-    // The tooltip stays inside the phone screen
-    expect(rowBox.x).toBeGreaterThanOrEqual(0);
-    expect(rowBox.x + rowBox.width).toBeLessThanOrEqual(390);
-
-    await page.touchscreen.tap(
-      rowBox.x + rowBox.width / 2,
-      rowBox.y + rowBox.height / 2
-    );
-
-    await expect(filterChip(page, 'Transport')).toBeVisible();
-    await expect(expenseItem(page, 'SBB Ticket')).toBeVisible();
-    await expect(expenseItem(page, 'Migros Zurich')).toHaveCount(0);
   });
 });
