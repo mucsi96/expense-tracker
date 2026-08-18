@@ -201,6 +201,32 @@ test('displays monthly spending by category chart', async ({ page }) => {
   await expect(chartSection.getByText('Jul 2026')).toBeVisible();
 });
 
+test('orders chart categories by spending with the largest first', async ({ page }) => {
+  // Transport (12.80 + 100.00) overtakes Groceries (42.50), so an
+  // alphabetical order would fail this test
+  await insertExpense('2026-07-10T10:00:00Z', 'Taxi Zurich', 'Transport', 100, 'CHF', 'Card payment', 'Expense');
+  await page.goto('/');
+
+  const chartSection = page.getByRole('region', {
+    name: 'Monthly spending by category',
+  });
+
+  // The legend leads with the largest category
+  const transportBox = (await chartSection
+    .getByText('Transport', { exact: true })
+    .boundingBox())!;
+  const groceriesBox = (await chartSection
+    .getByText('Groceries', { exact: true })
+    .boundingBox())!;
+  expect(transportBox.x).toBeLessThan(groceriesBox.x);
+
+  // The tooltip reads the stack top-down: largest category first
+  await chartSection.getByRole('img', { name: /This is a chart/ }).hover();
+  const tooltipRows = chartSection.locator('.chart-tooltip-row');
+  await expect(tooltipRows.first()).toContainText('Transport');
+  await expect(tooltipRows.last()).toContainText('Groceries');
+});
+
 test('chart tooltip shows amounts with two decimals', async ({ page }) => {
   // 0.10 + 0.20 sums to 0.30000000000000004 in floating point; the tooltip
   // must format it as 0.30

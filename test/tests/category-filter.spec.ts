@@ -63,14 +63,15 @@ test('filters the list by clicking a bar segment in the chart', async ({
 }) => {
   await page.goto('/');
 
-  // Groceries is the bottom series of the stack and holds 42.50 of the 55.30
-  // July total, so a point just above the x-axis is inside its segment
+  // The stack puts the largest category on top, so Transport (12.80 of the
+  // 55.30 July total) sits at the bottom and a point just above the x-axis
+  // is inside its segment
   const box = (await chartCanvas(page).boundingBox())!;
   await page.mouse.click(box.x + box.width / 2, box.y + box.height - 45);
 
-  await expect(filterChip(page, 'Groceries')).toBeVisible();
-  await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
-  await expect(expenseItem(page, 'SBB Ticket')).toHaveCount(0);
+  await expect(filterChip(page, 'Transport')).toBeVisible();
+  await expect(expenseItem(page, 'SBB Ticket')).toBeVisible();
+  await expect(expenseItem(page, 'Migros Zurich')).toHaveCount(0);
 });
 
 test('filters the list by clicking a category in the chart legend', async ({
@@ -219,13 +220,15 @@ test.describe('mobile viewport', () => {
   }) => {
     await page.goto('/');
 
+    // Transport is the smallest July category, so its segment is at the
+    // bottom of the stack, just above the x-axis
     const box = (await chartCanvas(page).boundingBox())!;
     await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height - 40);
 
-    const chip = filterChip(page, 'Groceries');
+    const chip = filterChip(page, 'Transport');
     await expect(chip).toBeVisible();
-    await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
-    await expect(expenseItem(page, 'SBB Ticket')).toHaveCount(0);
+    await expect(expenseItem(page, 'SBB Ticket')).toBeVisible();
+    await expect(expenseItem(page, 'Migros Zurich')).toHaveCount(0);
 
     // Comfortable tap target, and the filtered page never scrolls sideways
     const chipBox = (await chip.boundingBox())!;
@@ -239,7 +242,7 @@ test.describe('mobile viewport', () => {
     ).toBe(0);
 
     await chip.tap();
-    await expect(expenseItem(page, 'SBB Ticket')).toBeVisible();
+    await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
   });
 
   test('filters by tapping a category in the chart tooltip', async ({
