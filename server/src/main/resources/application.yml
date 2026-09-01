@@ -2,6 +2,15 @@ expense-tracker:
   exchange-rate-api-url: https://api.frankfurter.dev/v1
 
 spring:
+  autoconfigure:
+    exclude:
+      # Key Vault secrets are pulled by spring-cloud-azure's environment
+      # post-processor, which builds its own client; these unused bean
+      # autoconfigurations register a bean through a supplier lambda that
+      # Spring AOT cannot serialize, breaking the GraalVM native image
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureGlobalPropertiesAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureTokenCredentialAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.storage.blob.AzureStorageBlobResourceAutoConfiguration
   datasource:
     url: ${db-url}
     username: ${db-username}

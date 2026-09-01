@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * ({@code mock_exchange_rate_server}) instead of the live API.
  */
 @Component
+@RegisterReflectionForBinding(FrankfurterExchangeRateProvider.FrankfurterResponse.class)
 public class FrankfurterExchangeRateProvider implements ExchangeRateProvider {
   private static final Duration CACHE_TTL = Duration.ofDays(1);
   private static final int TIMEOUT_MILLIS = 5000;
@@ -79,6 +81,6 @@ public class FrankfurterExchangeRateProvider implements ExchangeRateProvider {
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  private record FrankfurterResponse(Map<String, BigDecimal> rates) {
+  record FrankfurterResponse(Map<String, BigDecimal> rates) {
   }
 }

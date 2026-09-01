@@ -138,6 +138,19 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.graalvm.buildtools</groupId>
+        <artifactId>native-maven-plugin</artifactId>
+        <configuration>
+          <buildArgs>
+            <!-- LoggerFactory is initialized at build time, so the provider
+                 objects it captures (logback's and slf4j's substitutes) must
+                 be too, and Jackson's Base64Variant constants are captured
+                 the same way; logging is still configured at runtime -->
+            <buildArg>--initialize-at-build-time=org.slf4j,ch.qos.logback,com.fasterxml.jackson</buildArg>
+          </buildArgs>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
@@ -148,6 +161,22 @@
             </exclude>
           </excludes>
         </configuration>
+        <executions>
+          <!-- Key Vault secrets are an environment post-processor resolved at
+               runtime, so it is safe (and required, since no vault is
+               reachable at build time) to disable it during AOT processing -->
+          <execution>
+            <id>process-aot</id>
+            <configuration>
+              <arguments>
+                <argument>--spring.cloud.azure.keyvault.secret.property-sources[0].enabled=false</argument>
+                <!-- Deployments always run the actuator on its own port, so
+                     AOT must see one too for the same management topology -->
+                <argument>--SPRING_ACTUATOR_PORT=8162</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

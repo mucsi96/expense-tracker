@@ -2,10 +2,13 @@ package io.github.mucsi96.expensetracker;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ImportRuntimeHints;
 
 import io.github.mucsi96.expensetracker.config.DatabaseStartupInitializer;
+import io.github.mucsi96.expensetracker.config.NativeRuntimeHints;
 
 @SpringBootApplication
+@ImportRuntimeHints(NativeRuntimeHints.class)
 public class ExpenseTrackerApplication {
 
   public static void main(String[] args) {

@@ -64,7 +64,7 @@ A web app to track expenses, revenues, and budget. Built on the patterns of
 
 ## Key Technologies
 
-- Spring Boot 4, Java 21
+- Spring Boot 4, Java 21, compiled to a GraalVM native image for deployment
 - Angular 22
 - PostgreSQL 17
 - Azure AD (OIDC) authentication
