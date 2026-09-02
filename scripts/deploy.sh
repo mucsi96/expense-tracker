@@ -33,6 +33,18 @@ clientAppChartVersion=$(helm search repo mucsi96/client-app --output json | jq -
 
 echo "Deploying server: $DOCKERHUB_USERNAME/expense-tracker-server:$serverLatestTag using spring-app chart $springAppChartVersion"
 
+# The server is a GraalVM native executable, so there is no JVM metaspace, no
+# code cache and no JIT-compiled code to hold: it idles far below what the
+# 512Mi request assumed for the JRE image, hence the smaller request. The
+# request is what the scheduler reserves around the clock, so it is sized for
+# idle. It is an estimate, not a measurement - replace it with the resident
+# figure metrics-server reports once this image has run in production for a
+# while.
+#
+# The limit is the opposite question: it has to cover the idle footprint plus
+# the 256Mi heap the image is capped at (see the ENTRYPOINT in
+# server/Dockerfile - keep the two in step).
+
 helm upgrade $SERVER_RELEASE_NAME mucsi96/spring-app \
     --install \
     --version $springAppChartVersion \
@@ -44,9 +56,9 @@ helm upgrade $SERVER_RELEASE_NAME mucsi96/spring-app \
     --set serviceAccountName=expense-tracker-api-workload-identity \
     --set env.AZURE_KEYVAULT_ENDPOINT=$AZURE_KEYVAULT_ENDPOINT \
     --set env.CLIENT_APP_NAME=$CLIENT_RELEASE_NAME \
-    --set resources.requests.memory=512Mi \
+    --set resources.requests.memory=192Mi \
     --set resources.requests.cpu=100m \
-    --set resources.limits.memory=1Gi \
+    --set resources.limits.memory=768Mi \
     --set resources.limits.cpu=500m \
     --wait
 
