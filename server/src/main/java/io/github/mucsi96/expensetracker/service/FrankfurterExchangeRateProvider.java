@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -25,7 +26,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  *
  * The base URL is configurable so tests can point it at a local mock server
  * ({@code mock_exchange_rate_server}) instead of the live API.
+ *
+ * The response is read by a plain {@code RestClient}, which is outside what
+ * Spring's AOT processing infers reflection metadata for (controller payloads,
+ * entities and repositories are covered), so the native image needs the
+ * response type registered explicitly - without it the deserialization fails
+ * only at runtime, on the first foreign-currency transaction.
  */
+@RegisterReflectionForBinding(FrankfurterExchangeRateProvider.FrankfurterResponse.class)
 @Component
 public class FrankfurterExchangeRateProvider implements ExchangeRateProvider {
   private static final Duration CACHE_TTL = Duration.ofDays(1);
@@ -79,6 +87,6 @@ public class FrankfurterExchangeRateProvider implements ExchangeRateProvider {
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  private record FrankfurterResponse(Map<String, BigDecimal> rates) {
+  record FrankfurterResponse(Map<String, BigDecimal> rates) {
   }
 }
