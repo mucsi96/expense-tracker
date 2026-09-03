@@ -38,15 +38,10 @@ dump_logs() {
   done
 }
 
-echo "Waiting for all containers to become healthy..."
-CONTAINERS=$(podman pod inspect "$POD_NAME" --format '{{range .Containers}}{{.Name}} {{end}}')
-
-for container in $CONTAINERS; do
-  if echo "$container" | grep -q "infra"; then
-    continue
-  fi
+wait_for_healthy() {
+  local container="$1"
   echo "  Waiting for $container..."
-  ELAPSED=0
+  local elapsed=0
   # Run each container's healthcheck on demand instead of reading
   # .State.Health.Status: Podman 5 on GitHub runners never schedules or
   # records probe runs, so the status alone never becomes "healthy".
@@ -58,15 +53,34 @@ for container in $CONTAINERS; do
       dump_logs
       exit 1
     fi
-    if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
+    if [ "$elapsed" -ge "$MAX_WAIT" ]; then
       echo "Timeout waiting for $container to become healthy: $(container_state "$container")"
       dump_logs
       exit 1
     fi
     sleep 2
-    ELAPSED=$((ELAPSED + 2))
+    elapsed=$((elapsed + 2))
   done
   echo "  $container is healthy"
+}
+
+echo "Waiting for all containers to become healthy..."
+CONTAINERS=$(podman pod inspect "$POD_NAME" --format '{{range .Containers}}{{.Name}} {{end}}')
+
+for container in $CONTAINERS; do
+  if echo "$container" | grep -q "infra"; then
+    continue
+  fi
+  wait_for_healthy "$container"
 done
+
+# The server has just migrated an empty database, which is the one start that
+# never validates stored change set checksums. Every production start does, and
+# the native image takes reflection paths there that a first run never reaches
+# (see LiquibaseNativeHints). Start it once more against the migrated database
+# so the tests run on a server that came up the way production does.
+echo "Restarting the server against the migrated database..."
+podman restart "$POD_NAME-server" > /dev/null
+wait_for_healthy "$POD_NAME-server"
 
 echo "All services are ready!"
