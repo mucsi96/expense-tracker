@@ -59,7 +59,7 @@ helm upgrade $SERVER_RELEASE_NAME mucsi96/spring-app \
     --set serviceAccountName=expense-tracker-api-workload-identity \
     --set env.AZURE_KEYVAULT_ENDPOINT=$AZURE_KEYVAULT_ENDPOINT \
     --set env.CLIENT_APP_NAME=$CLIENT_RELEASE_NAME \
-    --set resources.requests.memory=192Mi \
+    --set resources.requests.memory=128Mi \
     --set resources.requests.cpu=100m \
     --set resources.limits.memory=512Mi \
     --set resources.limits.cpu=500m \
