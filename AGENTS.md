@@ -339,6 +339,21 @@ Build-time details that live in `server/pom.xml` and are easy to trip over:
   still carries `AzureKeyVaultSecretProperties` and
   `AzureKeyVaultPropertySourceProperties` with their accessors.
 
+- The reachability metadata the repository ships for liquibase-core is
+  conditional and was traced against an empty database: the getters Liquibase
+  reads reflectively to compute a change set's checksum are registered only
+  once `UpdateVisitor`, the visitor that executes change sets, has been
+  reached. On a fresh database that is early enough. On a database that already
+  carries the change sets - every production start - `ValidatingVisitor`
+  computes the checksums first, to compare them with the stored ones, and the
+  image dies with `MissingReflectionRegistrationError: Cannot reflectively
+  invoke method ... AbstractModifyDataChange.getCatalogName()` before
+  `UpdateVisitor` is ever reached. `LiquibaseNativeHints` registers every
+  change type with all of its public methods, over the whole class hierarchy.
+  The e2e pod starts on an empty database and cannot see this on its own, so
+  `scripts/pod_up.sh` restarts the server once the pod is up: the second start
+  validates checksums the way production does, and the tests run against it.
+
 Spring Cloud Azure needs one workaround in application code:
 `AzureGlobalPropertiesConfiguration` re-declares the `AzureGlobalProperties`
 bean. Spring Cloud Azure registers it from an `ImportBeanDefinitionRegistrar`
