@@ -24,26 +24,26 @@ public class CategoryController {
   private final CategoryService categoryService;
 
   @GetMapping("/categories")
-  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_readExpenses')")
+  @PreAuthorize("hasAuthority('APPROLE_readExpenses')")
   public List<CategoryResponse> getCategories() {
     return categoryService.getCategories();
   }
 
   @PostMapping("/categories")
   @ResponseStatus(HttpStatus.CREATED)
-  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_createExpenses')")
+  @PreAuthorize("hasAuthority('APPROLE_createExpenses')")
   public CategoryResponse createCategory(@RequestBody CategoryRequest request) {
     return categoryService.createCategory(request);
   }
 
   @PutMapping("/categories/{id}")
-  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_createExpenses')")
+  @PreAuthorize("hasAuthority('APPROLE_createExpenses')")
   public CategoryResponse updateCategory(@PathVariable Long id, @RequestBody CategoryRequest request) {
     return categoryService.updateCategory(id, request);
   }
 
   @DeleteMapping("/categories/{id}")
-  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_deleteExpenses')")
+  @PreAuthorize("hasAuthority('APPROLE_deleteExpenses')")
   public void deleteCategory(@PathVariable Long id) {
     categoryService.deleteCategory(id);
   }

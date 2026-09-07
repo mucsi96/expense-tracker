@@ -63,9 +63,9 @@ spec:
         - name: PREFERRED_USERNAME
           value: test-user@example.com
         - name: ROLES
-          value: ExpenseReader
+          value: readExpenses,createExpenses,deleteExpenses
         - name: SCP
-          value: readExpenses createExpenses deleteExpenses
+          value: api-access
         - name: AUD
           value: mock-api-client-id
       livenessProbe:
