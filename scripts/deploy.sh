@@ -40,8 +40,8 @@ echo "Deploying server: $DOCKERHUB_USERNAME/expense-tracker-server:$serverLatest
 # code cache and no JIT-compiled code to hold: it idles far below what the
 # 512Mi request assumed for the JRE image, hence the smaller request. The
 # request is what the scheduler reserves around the clock, so it is sized for
-# idle. Metrics-server puts the resident footprint at 139Mi over the last three
-# days, with an average of 112Mi.
+# idle. Over 36h in production RSS averaged 97Mi and peaked at 115Mi; the
+# working set peaked at 170Mi.
 #
 # The limit is the opposite question: it has to cover the idle footprint plus
 # the 256Mi heap the image is capped at (see the ENTRYPOINT in
@@ -58,9 +58,9 @@ helm upgrade $SERVER_RELEASE_NAME mucsi96/spring-app \
     --set serviceAccountName=expense-tracker-api-workload-identity \
     --set env.AZURE_KEYVAULT_ENDPOINT=$AZURE_KEYVAULT_ENDPOINT \
     --set env.CLIENT_APP_NAME=$CLIENT_RELEASE_NAME \
-    --set resources.requests.memory=160Mi \
+    --set resources.requests.memory=128Mi \
     --set resources.requests.cpu=100m \
-    --set resources.limits.memory=512Mi \
+    --set resources.limits.memory=384Mi \
     --set resources.limits.cpu=500m \
     --wait
 
@@ -72,4 +72,6 @@ helm upgrade $CLIENT_RELEASE_NAME mucsi96/client-app \
     --set image=$DOCKERHUB_USERNAME/expense-tracker-client:$clientLatestTag \
     --set host=$HOSTNAME \
     --set entryPoint=web \
+    --set resources.requests.memory=8Mi \
+    --set resources.limits.memory=32Mi \
     --wait
