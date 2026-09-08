@@ -21,19 +21,19 @@ public class ExpenseController {
   private final ExpenseService expenseService;
 
   @GetMapping("/expenses")
-  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_readExpenses')")
+  @PreAuthorize("hasAuthority('APPROLE_readExpenses')")
   public List<ExpenseResponse> getExpenses() {
     return expenseService.getExpenses();
   }
 
   @DeleteMapping("/expenses")
-  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_deleteExpenses')")
+  @PreAuthorize("hasAuthority('APPROLE_deleteExpenses')")
   public void deleteExpenses() {
     expenseService.deleteAllExpenses();
   }
 
   @PutMapping("/expenses/{id}/category")
-  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_createExpenses')")
+  @PreAuthorize("hasAuthority('APPROLE_createExpenses')")
   public ExpenseResponse updateCategory(@PathVariable Long id, @RequestBody ExpenseCategoryRequest request) {
     return expenseService.updateCategory(id, request.category());
   }

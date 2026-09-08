@@ -17,13 +17,13 @@ public class SettingsController {
   private final SettingsService settingsService;
 
   @GetMapping("/settings")
-  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_readExpenses')")
+  @PreAuthorize("hasAuthority('APPROLE_readExpenses')")
   public SettingsResponse getSettings() {
     return settingsService.getSettings();
   }
 
   @PutMapping("/settings")
-  @PreAuthorize("hasAuthority('APPROLE_ExpenseReader') and hasAuthority('SCOPE_createExpenses')")
+  @PreAuthorize("hasAuthority('APPROLE_createExpenses')")
   public SettingsResponse updateSettings(@RequestBody SettingsRequest request) {
     return settingsService.updateSettings(request);
   }
