@@ -64,8 +64,3 @@
     margin: 0 0 1.5rem;
   }
 }
-
-.cleanup-button {
-  --mat-button-filled-container-color: hsl(0, 65%, 45%);
-  --mat-button-filled-label-text-color: hsl(0, 0%, 100%);
-}
