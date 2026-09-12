@@ -13,7 +13,7 @@ import { MatDialogModule } from '@angular/material/dialog';
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button [mat-dialog-close]="false">Cancel</button>
-      <button mat-flat-button [mat-dialog-close]="true">Delete</button>
+      <button mat-flat-button bt-color="error" [mat-dialog-close]="true">Delete</button>
     </mat-dialog-actions>
   `,
 })
