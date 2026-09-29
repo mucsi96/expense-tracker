@@ -78,7 +78,27 @@ test('uses the selected closing period on mobile without horizontal overflow', a
   await page.getByRole('radio', { name: 'Aug 2026' }).click();
   const chart = page.getByRole('region', { name: 'Monthly budget burndown' });
   await expect(chart.getByText('Budget remaining: 80.00 CHF')).toBeVisible();
+  await expect(chart.getByText('Jul 17, 2026 – Aug 16, 2026 · Closing day: 16')).toBeVisible();
   await page.getByRole('radio', { name: 'Jul 2026' }).click();
   await expect(chart.getByText('Budget remaining: 39.70 CHF')).toBeVisible();
+  await expect(chart.getByText('Jun 17, 2026 – Jul 16, 2026 · Closing day: 16')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+});
+
+test('updates the burndown period after changing the cutoff in Settings', async ({ page }) => {
+  await query('UPDATE expensetracker.settings SET monthly_budget = 100');
+  await insertExpense('2026-07-17T10:00:00Z', 'After cutoff', 'Groceries', 20, 'CHF', 'Card payment', 'Expense');
+  await page.goto('/');
+  await page.getByRole('radio', { name: 'Jul 2026' }).click();
+  const chart = page.getByRole('region', { name: 'Monthly budget burndown' });
+  await expect(chart.getByText('Jul 1, 2026 – Jul 31, 2026 · Closing day: 31')).toBeVisible();
+  await expect(chart.getByText('Budget remaining: 24.70 CHF')).toBeVisible();
+  await page.getByRole('button', { name: 'TU' }).click();
+  await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+  await page.getByRole('spinbutton', { name: 'Closing day' }).fill('16');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText('Closing day saved')).toBeVisible();
+  await page.goBack();
+  await expect(chart.getByText('Jun 17, 2026 – Jul 16, 2026 · Closing day: 16')).toBeVisible();
+  await expect(chart.getByText('Budget remaining: 44.70 CHF')).toBeVisible();
 });

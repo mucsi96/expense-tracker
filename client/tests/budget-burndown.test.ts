@@ -40,3 +40,20 @@ test('shows only the ideal line for a future period', () => {
   assert.equal(data.ideal[0], 100);
   assert.equal(data.ideal.at(-1), 0);
 });
+
+test('uses the cutoff for both the actual spending and the ideal budget line', () => {
+  const data = budgetBurndown([
+    expense('2026-07-16', 500),
+    expense('2026-07-17', 20),
+    expense('2026-08-16', 30),
+    expense('2026-08-17', 500),
+  ], '2026-08', 16, 310, '2026-08-31');
+  assert.equal(data.dates[0], '2026-07-16');
+  assert.equal(data.dates[1], '2026-07-17');
+  assert.equal(data.dates.at(-1), '2026-08-16');
+  assert.equal(data.remaining[0], 310);
+  assert.equal(data.remaining[1], 290);
+  assert.equal(data.remaining.at(-1), 260);
+  assert.equal(data.ideal[1], 300);
+  assert.equal(data.ideal.at(-1), 0);
+});
