@@ -2,6 +2,22 @@
   <h1>Settings</h1>
 </div>
 
+<section class="settings-section" aria-label="Monthly budget">
+  <h2>Monthly budget</h2>
+  <p>Budget for each closing period in {{ settings.value()?.baseCurrency }}. Set 0 to disable the burndown chart.</p>
+  <form class="closing-day-form" (ngSubmit)="saveBudget()">
+    <mat-form-field class="budget-field">
+      <mat-label>Monthly budget</mat-label>
+      <input matInput type="number" name="monthlyBudget" min="0" max="999999999.99"
+        step="0.01" required [(ngModel)]="monthlyBudget" />
+    </mat-form-field>
+    <button mat-flat-button type="submit"
+      [disabled]="!budgetValid() || savingBudget() || savingClosingDay() || settings.isLoading()">
+      Update budget
+    </button>
+  </form>
+</section>
+
 <section class="settings-section">
   <h2>Monthly closing day</h2>
   <p>
@@ -24,7 +40,7 @@
     <button
       mat-flat-button
       type="submit"
-      [disabled]="!closingDayValid() || savingClosingDay()"
+      [disabled]="!closingDayValid() || savingClosingDay() || savingBudget() || settings.isLoading()"
     >
       Save
     </button>

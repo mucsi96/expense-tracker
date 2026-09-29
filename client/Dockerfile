@@ -5,7 +5,7 @@ WORKDIR /workspace
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run build
+RUN npm test && npm run build
 
 
 FROM docker.io/library/nginx:1.31.6

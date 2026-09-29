@@ -152,3 +152,16 @@ databaseChangeLog:
         - sql:
             sql: >-
               INSERT INTO expensetracker.settings (closing_day) VALUES (31)
+  - changeSet:
+      id: 7-add-monthly-budget
+      author: mucsi96
+      changes:
+        - addColumn:
+            tableName: settings
+            columns:
+              - column:
+                  name: monthly_budget
+                  type: numeric(11, 2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

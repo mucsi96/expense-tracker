@@ -5,7 +5,18 @@
 @if (loading()) {
 <bt-bar-loader class="page-loading" label="Loading expenses" />
 } @else {
-<app-monthly-category-chart (categorySelected)="applyCategoryFilter($event)" />
+<mat-tab-group animationDuration="0ms">
+  <mat-tab label="Budget burndown">
+    <ng-template matTabContent>
+      <app-budget-burndown [month]="selectedMonth()" />
+    </ng-template>
+  </mat-tab>
+  <mat-tab label="Monthly spending">
+    <ng-template matTabContent>
+      <app-monthly-category-chart (categorySelected)="applyCategoryFilter($event)" />
+    </ng-template>
+  </mat-tab>
+</mat-tab-group>
 @if (uncategorizedDays().length) {
 <section class="uncategorized" aria-label="Uncategorized">
   <h2 class="uncategorized-heading">Uncategorized</h2>

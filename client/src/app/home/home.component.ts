@@ -7,6 +7,8 @@ import {
 } from '@angular/material/bottom-sheet';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTabsModule } from '@angular/material/tabs';
+import { BudgetBurndownComponent } from '../budget-burndown/budget-burndown.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -76,6 +78,8 @@ const isForeign = (expense: Expense): boolean =>
     MatBottomSheetModule,
     MatButtonToggleModule,
     MatTooltipModule,
+    MatTabsModule,
+    BudgetBurndownComponent,
     MonthlyCategoryChartComponent,
     NgTemplateOutlet,
   ],

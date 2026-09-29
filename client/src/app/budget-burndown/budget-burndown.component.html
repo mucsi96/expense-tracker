@@ -1,0 +1,17 @@
+<section aria-label="Monthly budget burndown">
+  @if (!settings.value()?.monthlyBudget) {
+    <p><a routerLink="/settings">Set a monthly budget in Settings</a> to see your spending burndown.</p>
+  } @else if (month() === 'all') {
+    <p>Select a month below to see its budget burndown.</p>
+  } @else {
+    <h2>{{ monthLabel() }}</h2>
+    <p class="description">{{ periodLabel() }} · Closing day: {{ settings.value()!.closingDay }}</p>
+    @if (balance(); as remaining) {
+      <p>Budget remaining: <strong>{{ remaining }}</strong></p>
+    }
+    <p class="description">All spending in this closing period, including uncategorized transactions. The chart starts with the opening balance at the previous cutoff; the dashed line reaches zero at this period's closing date.</p>
+    @if (chartOptions(); as options) {
+      <div echarts class="chart" [options]="options" [initOpts]="initOpts"></div>
+    }
+  }
+</section>
