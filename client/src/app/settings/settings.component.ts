@@ -31,6 +31,34 @@ export class SettingsComponent {
   private readonly dialog = inject(MatDialog);
   readonly cleaningUp = signal(false);
   readonly savingClosingDay = signal(false);
+  readonly savingBudget = signal(false);
+  readonly settings = this.settingsService.settings;
+  readonly monthlyBudget = linkedSignal<number | null>(
+    () => this.settings.value()?.monthlyBudget ?? null
+  );
+  readonly budgetValid = computed(() => {
+    const budget = this.monthlyBudget();
+    return budget !== null &&
+      Number.isFinite(budget) &&
+      budget >= 0 &&
+      budget <= 999999999.99 &&
+      /^\d+(?:\.\d{1,2})?$/.test(String(budget));
+  });
+
+  async saveBudget(): Promise<void> {
+    if (!this.budgetValid()) {
+      return;
+    }
+    this.savingBudget.set(true);
+    try {
+      await this.settingsService.updateMonthlyBudget(this.monthlyBudget()!);
+      this.notifications.success('Monthly budget saved');
+    } catch {
+      this.notifications.error('Failed to save monthly budget');
+    } finally {
+      this.savingBudget.set(false);
+    }
+  }
 
   // Editable copy of the stored closing day; re-seeded whenever the settings
   // reload

@@ -22,7 +22,7 @@ export async function cleanupDb() {
   await query('DELETE FROM expensetracker.categories');
   await query('DELETE FROM expensetracker.merchant_categories');
   // Back to calendar months (the migration-seeded default)
-  await query('UPDATE expensetracker.settings SET closing_day = 31');
+  await query('UPDATE expensetracker.settings SET closing_day = 31, monthly_budget = 0');
 }
 
 export async function setClosingDay(day: number) {

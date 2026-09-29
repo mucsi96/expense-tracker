@@ -138,10 +138,11 @@ cd test && npx playwright test --ui  # Interactive test runner
   (authenticated)
 - `DELETE /api/categories/{id}` - Delete a category; expenses keep their
   category text (authenticated)
-- `GET /api/settings` - App settings, currently the monthly closing day
+- `GET /api/settings` - App settings: monthly closing day, monthly budget and reporting currency
   (authenticated)
 - `PUT /api/settings` - Update the settings; a closing day outside 1-31 is
-  rejected with 400 (authenticated)
+  rejected with 400 (authenticated). The optional monthly budget must be between
+  0 and 999999999.99 with at most two decimal places; omitting it preserves the stored budget.
 - `POST /api/bank-notifications` - Receive a bank card notification email from
   the Cloudflare email worker (bearer-token authenticated, see below)
 
@@ -170,7 +171,8 @@ cd test && npx playwright test --ui  # Interactive test runner
   the monthly closing day (default 31): a monthly period ends on that day of
   the month, transactions after it count towards the next month, and the
   period is named after the month it closes in. 31 covers every month end,
-  i.e. plain calendar months. Edited on the `/settings` route.
+  i.e. plain calendar months. Also holds the monthly budget in the reporting
+  currency (default 0, meaning not configured). Edited on the `/settings` route.
 
 Amounts are always positive; the `type` field ("Expense" or "Income") tells
 whether money went out (Debit) or came in (Credit).
@@ -181,6 +183,19 @@ reporting currency (CHF by default, configurable via
 `expense-tracker.base-currency`). Reporting (e.g. the monthly chart) uses the
 converted amount so mixed currencies aggregate correctly, while duplicate
 detection uses the original amount.
+
+## Budget Burndown
+
+The home page opens on the Budget burndown tab; Monthly spending contains the
+category chart. The burndown follows the selected month's closing period and
+shows budget minus cumulative converted spending, including uncategorized
+expenses and excluding income. Category filters do not affect the budget.
+Actuals stop at today, while the ideal line declines evenly from the opening
+budget to zero at the closing date. Negative balances show overspending.
+Selecting All asks for a single month; a zero budget links to Settings.
+
+The date-boundary calculation tests run with
+`node --test client/tests/budget-burndown.test.ts` (Node 24 or newer).
 
 ## Transaction List Filters
 

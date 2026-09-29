@@ -101,6 +101,7 @@ test('groups chart spending by the closing period', async ({ page }) => {
   const chartSection = page.getByRole('region', {
     name: 'Monthly spending by category',
   });
+  await page.getByRole('tab', { name: 'Monthly spending', exact: true }).click();
   await expect(chartSection.getByText('Jul 2026')).toBeVisible();
   await expect(chartSection.getByText('Aug 2026')).toBeVisible();
 });

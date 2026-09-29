@@ -25,12 +25,17 @@ const legendItem = (page: Page, category: string) =>
 const filterChip = (page: Page, category: string) =>
   page.getByRole('button', { name: `Clear category filter: ${category}` });
 
+const openMonthlySpending = async (page: Page) => {
+  await page.goto('/');
+  await page.getByRole('tab', { name: 'Monthly spending', exact: true }).click();
+};
+
 // A filtered URL opened while signed out arrives without its query: the login
 // redirect returns to the origin. Deep-link tests therefore sign in first, and
 // wait for the session before navigating - a bare goto('/') resolves while the
 // app is still bootstrapping.
 const signIn = async (page: Page) => {
-  await page.goto('/');
+  await openMonthlySpending(page);
   await expect(page.getByRole('button', { name: 'TU' })).toBeVisible();
 };
 
@@ -38,7 +43,7 @@ test('filters the list by clicking a bar segment in the chart', async ({
   page,
 }) => {
   await insertExpense('2026-07-08T10:00:00Z', 'Coop Bern', 'Groceries', 8.2, 'CHF', 'Card payment', 'Expense');
-  await page.goto('/');
+  await openMonthlySpending(page);
 
   // The stack puts the largest category on top, so Transport (12.80 of the
   // 55.30 July total) sits at the bottom and a point just above the x-axis
@@ -55,7 +60,7 @@ test('filters the list by clicking a bar segment in the chart', async ({
 test('filters the list by clicking a category in the chart legend', async ({
   page,
 }) => {
-  await page.goto('/');
+  await openMonthlySpending(page);
   await selectMonth(page, 'Jul 2026');
 
   await legendItem(page, 'Transport').click();
@@ -71,7 +76,7 @@ test('picking a category in the chart also selects its month', async ({
   page,
 }) => {
   await insertExpense('2026-06-15T10:00:00Z', 'Alps Hotel', 'Travel', 250, 'CHF', 'Card payment', 'Expense');
-  await page.goto('/');
+  await openMonthlySpending(page);
   await expect(expenseItem(page, 'Alps Hotel')).toHaveCount(0);
 
   // June is the left of the two months, and its bar is a single tall Travel
@@ -87,7 +92,7 @@ test('shows the filtered category with its emoji, count and total', async ({
   page,
 }) => {
   await insertExpense('2026-07-08T10:00:00Z', 'Coop Bern', 'Groceries', 8.2, 'CHF', 'Card payment', 'Expense');
-  await page.goto('/');
+  await openMonthlySpending(page);
   await selectMonth(page, 'Jul 2026');
 
   await legendItem(page, 'Groceries').click();
@@ -101,7 +106,7 @@ test('shows the filtered category with its emoji, count and total', async ({
 });
 
 test('clears the category filter from the chip', async ({ page }) => {
-  await page.goto('/');
+  await openMonthlySpending(page);
   await selectMonth(page, 'Jul 2026');
   await legendItem(page, 'Transport').click();
   await expect(expenseItem(page, 'Migros Zurich')).toHaveCount(0);
@@ -117,7 +122,7 @@ test('hides uncategorized transactions while a category is selected', async ({
   page,
 }) => {
   await insertExpense('2026-07-20T10:00:00Z', 'Unknown Shop', '', 9.9, 'CHF', 'Card payment', 'Expense');
-  await page.goto('/');
+  await openMonthlySpending(page);
   const uncategorized = page.getByRole('region', { name: 'Uncategorized' });
   await expect(uncategorized).toBeVisible();
 
@@ -132,7 +137,7 @@ test('tells that the selected category has no transactions in the month', async 
   page,
 }) => {
   await insertExpense('2026-06-15T10:00:00Z', 'Alps Hotel', 'Travel', 250, 'CHF', 'Card payment', 'Expense');
-  await page.goto('/');
+  await openMonthlySpending(page);
 
   await legendItem(page, 'Travel').click();
   await selectMonth(page, 'Jul 2026');
@@ -144,7 +149,7 @@ test('tells that the selected category has no transactions in the month', async 
 
 test.describe('URL', () => {
   test('keeps the selected filters in the URL', async ({ page }) => {
-    await page.goto('/');
+    await openMonthlySpending(page);
     await selectMonth(page, 'Jul 2026');
 
     await legendItem(page, 'Transport').click();
@@ -179,7 +184,7 @@ test.describe('URL', () => {
   test('goes back to the unfiltered list with the back button', async ({
     page,
   }) => {
-    await page.goto('/');
+    await openMonthlySpending(page);
     await selectMonth(page, 'Jul 2026');
     await legendItem(page, 'Transport').click();
     await expect(filterChip(page, 'Transport')).toBeVisible();
@@ -197,7 +202,7 @@ test.describe('mobile viewport', () => {
   test('filters by tapping a bar segment and clears with the chip', async ({
     page,
   }) => {
-    await page.goto('/');
+    await openMonthlySpending(page);
 
     // Transport is the smallest July category, so its segment is at the
     // bottom of the stack, just above the x-axis

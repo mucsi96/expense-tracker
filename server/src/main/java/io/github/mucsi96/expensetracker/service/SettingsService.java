@@ -1,5 +1,7 @@
 package io.github.mucsi96.expensetracker.service;
 
+import java.math.BigDecimal;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SettingsService {
   private final SettingsRepository settingsRepository;
+  private final CurrencyConversionService currencyConversionService;
 
   public SettingsResponse getSettings() {
     return toResponse(requireSettings());
@@ -24,6 +27,10 @@ public class SettingsService {
   public SettingsResponse updateSettings(SettingsRequest request) {
     Settings settings = requireSettings();
     settings.setClosingDay(requireValidClosingDay(request.closingDay()));
+    // Older clients only send closingDay; preserve the budget in that case.
+    if (request.monthlyBudget() != null) {
+      settings.setMonthlyBudget(requireValidBudget(request.monthlyBudget()));
+    }
     return toResponse(settings);
   }
 
@@ -43,7 +50,17 @@ public class SettingsService {
     return closingDay;
   }
 
-  private static SettingsResponse toResponse(Settings settings) {
-    return new SettingsResponse(settings.getClosingDay());
+  private static BigDecimal requireValidBudget(BigDecimal budget) {
+    if (budget.signum() < 0 || budget.compareTo(new BigDecimal("999999999.99")) > 0
+        || budget.stripTrailingZeros().scale() > 2) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+          "Monthly budget must be between 0 and 999999999.99 with at most two decimal places");
+    }
+    return budget;
+  }
+
+  private SettingsResponse toResponse(Settings settings) {
+    return new SettingsResponse(settings.getClosingDay(), settings.getMonthlyBudget(),
+        currencyConversionService.getBaseCurrency());
   }
 }

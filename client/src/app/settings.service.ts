@@ -7,6 +7,8 @@ export interface Settings {
   // Last day of the monthly period: transactions after it count towards the
   // next month. 31 covers every month end, i.e. plain calendar months.
   closingDay: number;
+  monthlyBudget: number;
+  baseCurrency: string;
 }
 
 @Injectable({
@@ -28,5 +30,19 @@ export class SettingsService {
       this.http.put<Settings>('/api/settings', { closingDay })
     );
     this.settings.reload();
+  }
+
+  async updateMonthlyBudget(monthlyBudget: number): Promise<void> {
+    const settings = this.settings.value();
+    if (!settings) {
+      throw new Error('Settings have not loaded');
+    }
+    const updated = await firstValueFrom(
+      this.http.put<Settings>('/api/settings', {
+        closingDay: settings.closingDay,
+        monthlyBudget,
+      })
+    );
+    this.settings.set(updated);
   }
 }

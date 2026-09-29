@@ -45,6 +45,11 @@
   width: 8rem;
 }
 
+.budget-field {
+  width: 14rem;
+  max-width: 100%;
+}
+
 .closing-day-form button {
   min-height: 44px;
 }

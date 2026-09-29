@@ -1,4 +1,6 @@
 package io.github.mucsi96.expensetracker.model;
 
-public record SettingsRequest(Integer closingDay) {
+import java.math.BigDecimal;
+
+public record SettingsRequest(Integer closingDay, BigDecimal monthlyBudget) {
 }

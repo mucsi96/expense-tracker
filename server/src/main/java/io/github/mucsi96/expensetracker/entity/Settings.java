@@ -1,5 +1,6 @@
 package io.github.mucsi96.expensetracker.entity;
 
+import java.math.BigDecimal;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,4 +25,7 @@ public class Settings {
 
   @Column(name = "closing_day")
   private Integer closingDay;
+
+  @Column(name = "monthly_budget", precision = 11, scale = 2)
+  private BigDecimal monthlyBudget;
 }

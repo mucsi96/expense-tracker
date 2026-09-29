@@ -187,6 +187,7 @@ test('shows uncategorized transactions regardless of the selected month and not 
 
 test('displays monthly spending by category chart', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('tab', { name: 'Monthly spending', exact: true }).click();
   const chartSection = page.getByRole('region', {
     name: 'Monthly spending by category',
   });
@@ -206,6 +207,7 @@ test('orders chart categories by spending with the largest first', async ({ page
   // alphabetical order would fail this test
   await insertExpense('2026-07-10T10:00:00Z', 'Taxi Zurich', 'Transport', 100, 'CHF', 'Card payment', 'Expense');
   await page.goto('/');
+  await page.getByRole('tab', { name: 'Monthly spending', exact: true }).click();
 
   const chartSection = page.getByRole('region', {
     name: 'Monthly spending by category',
@@ -227,6 +229,7 @@ test('chart tooltip shows only the hovered category and its total', async ({ pag
   await insertExpense('2026-07-05T10:00:00Z', 'Kiosk A', 'Snacks', 100.1, 'CHF', 'Card payment', 'Expense');
   await insertExpense('2026-07-06T10:00:00Z', 'Kiosk B', 'Snacks', 200.2, 'CHF', 'Card payment', 'Expense');
   await page.goto('/');
+  await page.getByRole('tab', { name: 'Monthly spending', exact: true }).click();
 
   const chartSection = page.getByRole('region', {
     name: 'Monthly spending by category',
@@ -247,6 +250,7 @@ test.describe('mobile viewport', () => {
 
   test('fits chart, month filter and expenses without horizontal scrolling', async ({ page }) => {
     await page.goto('/');
+    await page.getByRole('tab', { name: 'Monthly spending', exact: true }).click();
     await selectMonth(page, 'All');
     await expect(expenseItem(page, 'Migros Zurich')).toBeVisible();
     await expect(
