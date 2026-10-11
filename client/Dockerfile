@@ -9,6 +9,7 @@ RUN npm test && npm run build
 
 
 FROM docker.io/library/nginx:1.31.6
+LABEL org.opencontainers.image.source="https://github.com/mucsi96/expense-tracker"
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/*
 
