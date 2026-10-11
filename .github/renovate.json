@@ -3,6 +3,9 @@
   "dependencyDashboard": true,
   "groupName": "all dependencies",
   "groupSlug": "all",
+  "separateMajorMinor": false,
+  "separateMultipleMajor": false,
+  "separateMinorPatch": false,
   "packageRules": [
     {
       "description": "Angular 22 requires TypeScript >=6.0 <6.1; review this range when upgrading Angular.",
