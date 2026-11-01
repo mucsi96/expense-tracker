@@ -57,7 +57,7 @@ for (const invalidBudget of [-1, 0.001, 1000000000]) {
     await page.goto('/');
     await page.getByRole('link', { name: 'Set a monthly budget in Settings' }).click();
     await page.route('**/api/settings', (route) => route.request().method() === 'PUT'
-      ? route.continue({ postData: JSON.stringify({ closingDay: 16, monthlyBudget: invalidBudget }) })
+      ? route.fallback({ postData: JSON.stringify({ closingDay: 16, monthlyBudget: invalidBudget }) })
       : route.fallback());
     await page.getByRole('spinbutton', { name: 'Monthly budget' }).fill('100');
     const response = page.waitForResponse((response) =>
