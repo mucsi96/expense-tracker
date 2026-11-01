@@ -5,10 +5,10 @@ import { test, expect } from '@playwright/test';
 // to an old version of the app.
 
 test('serves the app shell with no-cache', async ({ request }) => {
-  for (const path of ['/', '/index.html', '/manifest.webmanifest']) {
-    const response = await request.get(path);
+  for (const path of ['/', '/index.html', '/settings/categories']) {
+    const response = await request.get(path, { headers: { Accept: 'text/html' } });
     expect(response.ok()).toBe(true);
-    expect(response.headers()['cache-control'], path).toBe('no-cache');
+    expect(response.headers()['cache-control'], path).toContain('no-store');
   }
 });
 

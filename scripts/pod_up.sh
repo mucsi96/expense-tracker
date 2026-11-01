@@ -13,9 +13,14 @@ else
   # processing, so the pod image has to be built with the test profile.
   podman build --build-arg SPRING_PROFILE=test \
     -t localhost/expense-tracker-server:test "$PROJECT_DIR/server" &
-  podman build -t localhost/expense-tracker-client:test "$PROJECT_DIR/client" &
+  server_build=$!
+  (cd "$PROJECT_DIR/client" && npm ci && npm test && npm run build) &
+  client_build=$!
   podman build -t localhost/expense-tracker-mock-exchange-rate:test "$PROJECT_DIR/mock_exchange_rate_server" &
-  wait
+  exchange_build=$!
+  wait "$server_build"
+  wait "$client_build"
+  wait "$exchange_build"
 fi
 
 echo "Cleaning up existing pod..."

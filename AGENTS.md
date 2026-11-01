@@ -60,17 +60,17 @@ Skeleton sync: follow `.github/prompts/sync-skeleton.md` in a weekly scheduled t
 A web app to track expenses, revenues, and budget. Built on the patterns of
 [skeleton-app](https://github.com/mucsi96/skeleton-app):
 - CI/CD pipeline (GitHub Actions)
-- Deployment (Docker images published to registry)
+- Deployment (native API image and Azure static client hosting)
 - Client (Angular with Material UI)
 - Server (Spring Boot with Java 21)
-- Authentication (Azure AD / MSAL)
+- Authentication (Entra/oauth2-proxy gateway sessions, backend JWT and CSRF)
 - Configuration (Azure Key Vault, Spring profiles)
 - Database (PostgreSQL with JPA)
 - Testing (Playwright E2E)
 
 ## Architecture
 
-- **client/** - Angular SPA with Material UI, OIDC authentication
+- **client/** - Angular SPA with Material UI, authenticated by the gateway before startup
 - **server/** - Spring Boot REST API with PostgreSQL
 - **mock_exchange_rate_server/** - Express mock of the Frankfurter exchange
   rate API, used by the E2E test pod
@@ -122,7 +122,6 @@ cd test && npx playwright test --ui  # Interactive test runner
 
 ## API Routes
 
-- `GET /api/environment` - Client configuration (public)
 - `GET /api/expenses` - List expenses (authenticated)
 - `DELETE /api/expenses` - Delete all expenses (authenticated)
 - `PUT /api/expenses/{id}/category` - Assign an existing category to an
@@ -432,7 +431,7 @@ looks for over the whole class hierarchy - see
 
 ### Release and image publishing
 
-`publish-server` and `publish-client` publish numbered GHCR images only when
+`publish-server` publishes numbered GHCR images only when
 `get_next_version.outputs.hasNextVersion == 'true'`, tagging them with
 `get_next_version.outputs.version`. Authentication uses `GITHUB_TOKEN` with
 job-scoped `packages: write`. Release tags use `target_commitish: ${{ github.sha }}`.
@@ -441,11 +440,21 @@ release when unchanged; `hasNextVersion` alone controls publication. Forward its
 version output directly to deployment without a consumer-side tag lookup.
 The workflow serializes publication and rollout; require numbered GHCR tags or
 digests.
-The production Dockerfiles carry GHCR source labels, triggering both initial
-publications through normal component version detection.
-Both packages must be public for anonymous Kubernetes pulls.
+The server package must be public for anonymous Kubernetes pulls.
+`publish-client` packages the tested `client-static` artifact as a release
+tarball. Deployment uploads assets before index HTML to Azure storage and
+retains old bundles; no production client container is built.
 
-### Environment Config
-- Server exposes `/api/environment` endpoint
-- Client fetches config before bootstrap
-- Conditionally enables mock OIDC based on `mockOAuth2ServerUri`
+### Gateway authentication and static hosting
+- Gateway documents authenticate through a per-app oauth2-proxy session before startup.
+- `/oauth2/userinfo` supplies display-only profile data; browsers store no OAuth tokens.
+- The API preserves JWT scope/role checks and requires `__Host-XSRF-TOKEN` /
+  `X-XSRF-TOKEN` for mutations, including bearer requests supplied by the proxy.
+- Only POST `/api/bank-notifications` bypasses gateway session checks; its token
+  filter remains mandatory and its chain is CSRF-exempt.
+- Faro's app name and same-origin `/_telemetry/collect` are compiled into the bundle.
+- p07 owns auth/storage prerequisites. Deploy uses spring-app 37.0.0 and
+  static-client-app 5.0.0 with reset values. See `docs/static-hosting.md`.
+- Test fixtures supply gateway identity while the real API validates JWT/CSRF.
+  `python3 scripts/check_static_assets.py client/dist` checks separate-origin
+  asset delivery, fonts, lazy chunks, manifest navigation and same-origin Faro.

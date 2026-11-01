@@ -3,14 +3,33 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { cleanupDb, insertCategory, insertExpense } from './utils';
 
-export const test = base.extend({
-  page: async ({ page }, use, testInfo: TestInfo) => {
+export const test = base.extend<{ apiHeaders: Record<string, string> }>({
+  apiHeaders: async ({ request }, use) => {
+    const issuer = 'http://localhost:8060/default';
+    const redirect = 'http://localhost/test';
+    const authorization = await request.get(`${issuer}/authorize`, {
+      params: { client_id: 'test-client', redirect_uri: redirect, response_type: 'code' },
+      maxRedirects: 0,
+    });
+    const code = new URL(authorization.headers()['location']).searchParams.get('code')!;
+    const tokens = await request.post(`${issuer}/token`, {
+      form: { grant_type: 'authorization_code', client_id: 'test-client', redirect_uri: redirect, code },
+    });
+    if (!tokens.ok()) throw new Error(`Mock token request failed: ${tokens.status()}`);
+    await use({ Authorization: `Bearer ${(await tokens.json()).access_token}` });
+  },
+  page: async ({ page, apiHeaders }, use, testInfo: TestInfo) => {
     await cleanupDb();
     await insertExpense('2026-07-01T10:00:00Z', 'Migros Zurich', 'Groceries', 42.5, 'CHF', 'Card payment', 'Expense');
     await insertExpense('2026-07-03T10:00:00Z', 'SBB Ticket', 'Transport', 12.8, 'CHF', 'Direct payment', 'Expense');
     await insertCategory('Groceries', '🛒', 'Migros, Coop, Aldi, Lidl');
     await insertCategory('Transport');
     await insertCategory('Restaurants');
+
+    // Stand in for the gateway; backend JWT/role and CSRF validation remain real.
+    await page.route('**/api/**', route => route.continue({ headers: { ...route.request().headers(), ...apiHeaders } }));
+    await page.route('**/oauth2/userinfo', route => route.fulfill({ json: { email: 'test-user@example.com', additionalClaims: { name: 'Test User' } } }));
+    await page.route('**/_telemetry/collect', route => route.fulfill({ status: 202, body: 'ok' }));
 
     // Capture browser console logs
     const consoleLogs: string[] = [];

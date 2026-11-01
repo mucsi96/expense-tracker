@@ -7,11 +7,11 @@ Based on the patterns from [skeleton-app](https://github.com/mucsi96/skeleton-ap
 
 ## Patterns Covered
 
-- **CI/CD Pipeline** - GitHub Actions with E2E testing and image publishing
-- **Deployment** - Docker multi-stage builds with Traefik reverse proxy
+- **CI/CD Pipeline** - GitHub Actions with E2E tests, native API images and tested static client artifacts
+- **Deployment** - Traefik gateway, Azure static website documents and direct Blob assets
 - **Client** - Angular with Material UI dark theme
 - **Server** - Spring Boot with Java 21, compiled ahead of time into a GraalVM native image
-- **Authentication** - Azure AD (OIDC) with conditional mock auth for testing
+- **Authentication** - Entra/oauth2-proxy gateway sessions; backend JWT roles and CSRF validation
 - **Configuration** - Azure Key Vault + Spring profiles (prod/local/test)
 - **Database** - PostgreSQL with Spring Data JPA and Liquibase
 - **Testing** - Playwright E2E tests
@@ -35,6 +35,31 @@ podman build --build-arg SPRING_PROFILE=prod -t expense-tracker-server:prod serv
 image for the e2e job and the prod image when publishing to GHCR. Running
 the server on a JVM for local development is unaffected - `mvn spring-boot:run
 -Dspring-boot.run.profiles=local` still selects the profile the usual way.
+
+## Gateway authentication and static hosting
+
+The gateway authenticates documents before Angular starts. OAuth tokens remain
+server-side in a per-app oauth2-proxy session backed by shared Redis; the browser
+uses a host-only HttpOnly `__Host-session` cookie. Angular reads display-only
+profile data from `/oauth2/userinfo` and sends same-origin API requests. The API
+still validates JWT issuer, audience, `api-access` scope and expense roles.
+Mutations additionally require the readable Secure `__Host-XSRF-TOKEN` cookie
+and matching `X-XSRF-TOKEN` header, including proxy-authenticated bearer requests.
+
+Only POST `/api/bank-notifications` bypasses browser session authentication; its
+existing worker bearer token remains mandatory. See [rollout details](docs/static-hosting.md).
+
+CI builds the client once, tests that artifact and publishes it to Azure assets
+before updating the document. Fonts, icons and lazy chunks load directly from
+Blob storage with app-origin CORS. Faro uses the compiled app name
+`expense-tracker-client` and same-origin `/_telemetry/collect`. No environment
+bootstrap endpoint or document configuration injection is needed.
+
+Local E2E tests use nginx as a file-only origin and Traefik for SPA routes;
+Playwright supplies the mock gateway identity while the real API checks JWTs
+and CSRF. Standalone `npm start` requires a same-origin authenticated gateway
+for API access; the test pod and Playwright fixtures provide the reproducible
+development/test path.
 
 ## Port Mapping
 
