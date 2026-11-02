@@ -442,8 +442,8 @@ The workflow serializes publication and rollout; require numbered GHCR tags or
 digests.
 The server package must be public for anonymous Kubernetes pulls.
 `publish-client` packages the tested `client-static` artifact as a release
-tarball. Deployment uploads assets before index HTML to Azure storage and
-retains old bundles; no production client container is built.
+tarball. Deployment empties `$web` and `assets`, then uploads the latest assets
+before index HTML. Downtime is intentional; no production client container is built.
 
 ### Gateway authentication and static hosting
 - Gateway documents authenticate through a per-app oauth2-proxy session before startup.
