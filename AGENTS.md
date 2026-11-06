@@ -456,5 +456,3 @@ before index HTML. Downtime is intentional; no production client container is bu
 - p07 owns auth/storage prerequisites. Deploy uses spring-app 37.0.0 and
   static-client-app 5.0.0 with reset values. See `docs/static-hosting.md`.
 - Test fixtures supply gateway identity while the real API validates JWT/CSRF.
-  `python3 scripts/check_static_assets.py client/dist` checks separate-origin
-  asset delivery, fonts, lazy chunks, manifest navigation and same-origin Faro.
