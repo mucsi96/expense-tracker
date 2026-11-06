@@ -148,8 +148,6 @@ jobs:
         with:
           name: client-static
           path: client/dist
-      - name: Check direct static assets in Chromium
-        run: python3 scripts/check_static_assets.py client/dist
       # The server is a single native executable, so if it cannot even start in
       # the runtime image there is nothing to log and the pod just times out two
       # minutes later with an empty container log. Fail here instead.

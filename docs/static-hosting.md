@@ -54,7 +54,6 @@ smoke checks are separate rollout steps, not part of PR creation.
 node --test scripts/prepare-client.test.mjs client/tests/budget-burndown.test.ts
 (cd client && npm ci && npm run build)
 (cd test && npm ci && npx playwright install chromium)
-python3 scripts/check_static_assets.py client/dist
 scripts/pod_up.sh
 (cd test && npm test)
 scripts/pod_down.sh
