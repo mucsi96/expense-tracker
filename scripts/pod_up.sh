@@ -14,7 +14,7 @@ else
   podman build --build-arg SPRING_PROFILE=test \
     -t localhost/expense-tracker-server:test "$PROJECT_DIR/server" &
   server_build=$!
-  (cd "$PROJECT_DIR/client" && npm ci && npm test && npm run build) &
+  (cd "$PROJECT_DIR/client" && npm ci && npm run lint && npm test && npm run build) &
   client_build=$!
   podman build -t localhost/expense-tracker-mock-exchange-rate:test "$PROJECT_DIR/mock_exchange_rate_server" &
   exchange_build=$!

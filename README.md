@@ -9,14 +9,14 @@ Based on the patterns from [skeleton-app](https://github.com/mucsi96/skeleton-ap
 
 - **CI/CD Pipeline** - GitHub Actions with E2E tests, native API images and tested static client artifacts
 - **Deployment** - Traefik gateway, Azure static website documents and direct Blob assets
-- **Client** - Angular with Material UI dark theme
+- **Client** - React, Vite and TypeScript with colocated CSS Modules
 - **Server** - Spring Boot with Java 21, compiled ahead of time into a GraalVM native image
 - **Authentication** - Entra/oauth2-proxy gateway sessions; backend JWT roles and CSRF validation
 - **Configuration** - Azure Key Vault + Spring profiles (prod/local/test)
 - **Database** - PostgreSQL with Spring Data JPA and Liquibase
 - **Testing** - Playwright E2E tests
-- **UI Components** - Material UI with custom dark theme
-- **Fetching** - Angular resource API with HttpClient
+- **UI Components** - `@mucsi96/react-ui` accessible dark theme and ECharts
+- **Fetching** - TanStack Query with Zod-validated API boundaries
 
 ## One image per Spring profile
 
@@ -38,9 +38,9 @@ the server on a JVM for local development is unaffected - `mvn spring-boot:run
 
 ## Gateway authentication and static hosting
 
-The gateway authenticates documents before Angular starts. OAuth tokens remain
+The gateway authenticates documents before React starts. OAuth tokens remain
 server-side in a per-app oauth2-proxy session backed by shared Redis; the browser
-uses a host-only HttpOnly `__Host-session` cookie. Angular reads display-only
+uses a host-only HttpOnly `__Host-session` cookie. React reads display-only
 profile data from `/oauth2/userinfo` and sends same-origin API requests. The API
 still validates JWT issuer, audience, `api-access` scope and expense roles.
 Mutations additionally require the readable Secure `__Host-XSRF-TOKEN` cookie
@@ -50,7 +50,7 @@ Only POST `/api/bank-notifications` bypasses browser session authentication; its
 existing worker bearer token remains mandatory. See [rollout details](docs/static-hosting.md).
 
 CI builds the client once, tests that artifact and publishes it to Azure assets
-before updating the document. Fonts, icons and lazy chunks load directly from
+before updating the document. Icons and lazy chunks load directly from
 Blob storage with app-origin CORS. Faro uses the compiled app name
 `expense-tracker-client` and same-origin `/_telemetry/collect`. No environment
 bootstrap endpoint or document configuration injection is needed.
@@ -68,7 +68,7 @@ avoid clashes with other local projects (skeleton-app uses xx50–xx59).
 
 | Port | Service              | Context                             |
 |------|----------------------|-------------------------------------|
-| 4260 | Angular dev server   | Local dev                           |
+| 4260 | Vite dev server      | Local dev                           |
 | 5460 | PostgreSQL           | Dev database                        |
 | 5461 | PostgreSQL           | Test pod                            |
 | 8060 | Mock OAuth2 provider | Test pod                            |
@@ -101,6 +101,19 @@ via your distro, e.g. `apt install podman`.
 
 ## Quick Start
 
+The frontend requires Node.js 24 or newer. Routes (`/`, `/settings`, and
+`/settings/categories`) are lazy-loaded. TanStack Query owns server state and
+invalidates expenses when category edits affect merchant bindings; URL search
+parameters own the month/category filters. The backend API is unchanged.
+
+```bash
+cd client
+npm ci
+npm run lint
+npm test             # Existing framework-independent date calculations
+npm run build       # Strict TypeScript checking and production Vite build
+```
+
 ```bash
 # Start test stack
 scripts/pod_up.sh
@@ -108,3 +121,7 @@ scripts/pod_up.sh
 # Run E2E tests
 cd test && npm test
 ```
+
+When running a test pod with remapped host ports, the Playwright suite accepts
+`TEST_BASE_URL`, `TEST_OIDC_URL`, and `TEST_DB_PORT` (defaults: localhost ports
+8160, 8060, and 5461). These affect test connections only, not API token claims.
