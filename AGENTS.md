@@ -39,20 +39,18 @@ Skeleton sync: follow `.github/prompts/sync-skeleton.md` in a weekly scheduled t
 - Use semantic selectors (getByText, getByLabel)
 - E2E tests with Playwright
 
-## Angular Style
+## React Style
 
-- Use Angular Material components
-- Follow `@mucsi96/angular-material-theme`'s documented button-color API: use `bt-color="primary|success|warn|error"` on `mat-flat-button`, `mat-raised-button`, `mat-fab` (including extended FABs), and `mat-mini-fab`, including anchor buttons. Use `[attr.bt-color]` for dynamic tones; no directive import is needed.
-- Solid buttons default to primary. Use `error` for destructive actions, `warn` for caution, and `success` for positive outcomes. Material's legacy `color="warn"` means error/red, not the theme's orange `bt-color="warn"`; migrate solid buttons accordingly.
-- For an arbitrary solid-button color, set only `--bt-button-bg` without `bt-color`. Let the theme derive label contrast and hover colors; do not override Material container/label/state-layer color tokens, `--mat-sys-primary`, or button `background`, `color`, and `:hover` separately. Keep the intended button variant; raised buttons support the same API and retain elevation.
-- The `bt-color` API does not cover text, outlined, icon, or menu buttons. Use their documented Material APIs instead; do not apply solid-button color workarounds to them. Check the installed theme README when upgrading or changing component styles.
-- Use signals and resources (not rxjs where possible)
-- Use string literals over enums
-- Standalone components
+- Function components and hooks; colocate component CSS Modules.
+- Use `@mucsi96/react-ui` accessible controls and its documented `tone` API.
+- TanStack Query owns server state; invalidate all affected queries after mutations.
+- Validate API responses with Zod; keep OAuth at the gateway and attach the CSRF proof only to same-origin mutations.
+- React Router owns routes and URL filters. Lazy-load pages and charts.
+- Verify user journeys with Playwright; do not add React unit/component tests.
 
 ## Design
 
-- Material UI dark theme
+- `@mucsi96/react-ui` dark theme
 - Skeleton loaders for loading states
 
 ## Project Overview
@@ -61,7 +59,7 @@ A web app to track expenses, revenues, and budget. Built on the patterns of
 [skeleton-app](https://github.com/mucsi96/skeleton-app):
 - CI/CD pipeline (GitHub Actions)
 - Deployment (native API image and Azure static client hosting)
-- Client (Angular with Material UI)
+- Client (React/Vite/TypeScript with `@mucsi96/react-ui`)
 - Server (Spring Boot with Java 21)
 - Authentication (Entra/oauth2-proxy gateway sessions, backend JWT and CSRF)
 - Configuration (Azure Key Vault, Spring profiles)
@@ -70,7 +68,7 @@ A web app to track expenses, revenues, and budget. Built on the patterns of
 
 ## Architecture
 
-- **client/** - Angular SPA with Material UI, authenticated by the gateway before startup
+- **client/** - React SPA with CSS Modules, authenticated by the gateway before startup
 - **server/** - Spring Boot REST API with PostgreSQL
 - **mock_exchange_rate_server/** - Express mock of the Frankfurter exchange
   rate API, used by the E2E test pod
@@ -81,7 +79,7 @@ A web app to track expenses, revenues, and budget. Built on the patterns of
 ## Key Technologies
 
 - Spring Boot 4, Java 21 (built into a GraalVM native image)
-- Angular 22
+- React 19, Vite, TanStack Query and Zod
 - PostgreSQL 17
 - Azure AD (OIDC) authentication
 - Azure Key Vault for secrets
@@ -95,6 +93,7 @@ A web app to track expenses, revenues, and budget. Built on the patterns of
 ```bash
 cd client && npm start        # Start dev server
 cd client && npm run build    # Production build
+cd client && npm run lint     # ESLint and React hooks checks
 ```
 
 ### Backend

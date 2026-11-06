@@ -23,8 +23,9 @@ following the [shared architecture](https://github.com/mucsi96/skeleton-app/issu
 CI builds `client/dist` once. Both E2E and the separate-origin Chromium check use
 that artifact. `scripts/prepare-client.mjs` separates `documents/index.html` from
 assets, rewrites script/link URLs and makes PWA start/scope/id point at the app
-origin. The document base stays `/`; JS/CSS bundles are not rewritten. Fonts are
-local and critical CSS is not inlined, so relative font URLs resolve at storage.
+origin. The document base stays `/`; JS/CSS bundles are not rewritten. Vite uses
+a relative asset base, including lazy module and CSS imports. Typography uses
+system fonts, so no external font origin is needed.
 
 Deployment reads `client-storage-config` (`account_name`, `hostname`,
 `assets_base_url`) and `forward-auth-config` (`release_name`, `auth`) from the app
