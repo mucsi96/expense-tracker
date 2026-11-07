@@ -54,7 +54,7 @@ export async function fetchJson<T>(path: string, schema: z.ZodType<T>, init: Req
   }
   const response = await fetch(url, { ...init, headers, credentials: 'same-origin' });
   if (!response.ok) throw new Error(`Request failed (${response.status})`);
-  // Spring's void DELETE handlers return 200 with an empty body, while the
+  // DELETE handlers return 200 with an empty body, while the
   // notification endpoint uses 204. Validate both through the caller's schema.
   const body = await response.text();
   return schema.parse(body === '' ? undefined : JSON.parse(body));

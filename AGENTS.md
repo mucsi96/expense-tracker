@@ -14,30 +14,17 @@ Skeleton sync: follow `.github/prompts/sync-skeleton.md` in a weekly scheduled t
 
 ## General Code Style
 
-- Avoid fallbacks, prefer failing fast
-- Prefer functional programming patterns
-- Prefer immutable data structures
+- Avoid fallbacks, prefer failing fast.
+- Prefer functional programming patterns and immutable data structures.
+- TypeScript: use `const`, spread operators, functional array methods and string literals over enums.
 
-## Java Style
+## Rust Style
 
-- Use Lombok annotations (@Data, @Builder, @RequiredArgsConstructor)
-- Constructor injection (via @RequiredArgsConstructor)
-- Use Stream API for collections
-- Use records for DTOs/responses
-
-## TypeScript Style
-
-- Use `const` by default
-- Prefer spread operator for object/array operations
-- Use functional array methods (map, filter, reduce)
-- Use string literals over enums
-
-## Testing Style
-
-- Write tests from user perspective
-- Use role-based selectors (getByRole)
-- Use semantic selectors (getByText, getByLabel)
-- E2E tests with Playwright
+- Follow skeleton-app's Loco lifecycle and CLI, typed Serde configuration and payloads, thin controllers, typed service errors and structured tracing.
+- Use SeaORM models and migrations. Keep multi-row business mutations transactional.
+- Preserve the PostgreSQL `expensetracker` schema, existing rows, identifiers and sequences.
+- Use decimal arithmetic for amounts; preserve JSON numeric values and camelCase API fields.
+- Run formatting, Clippy and build checks. Verify behavior with Playwright; do not add Rust unit/integration tests or React unit/component tests.
 
 ## React Style
 
@@ -46,412 +33,148 @@ Skeleton sync: follow `.github/prompts/sync-skeleton.md` in a weekly scheduled t
 - TanStack Query owns server state; invalidate all affected queries after mutations.
 - Validate API responses with Zod; keep OAuth at the gateway and attach the CSRF proof only to same-origin mutations.
 - React Router owns routes and URL filters. Lazy-load pages and charts.
-- Verify user journeys with Playwright; do not add React unit/component tests.
-
-## Design
-
-- `@mucsi96/react-ui` dark theme
-- Skeleton loaders for loading states
-
-## Project Overview
-
-A web app to track expenses, revenues, and budget. Built on the patterns of
-[skeleton-app](https://github.com/mucsi96/skeleton-app):
-- CI/CD pipeline (GitHub Actions)
-- Deployment (native API image and Azure static client hosting)
-- Client (React/Vite/TypeScript with `@mucsi96/react-ui`)
-- Server (Spring Boot with Java 21)
-- Authentication (Entra/oauth2-proxy gateway sessions, backend JWT and CSRF)
-- Configuration (Azure Key Vault, Spring profiles)
-- Database (PostgreSQL with JPA)
-- Testing (Playwright E2E)
+- Verify user journeys with Playwright, using role-based and semantic selectors.
+- Use the dark theme and skeleton loaders for loading states.
 
 ## Architecture
 
-- **client/** - React SPA with CSS Modules, authenticated by the gateway before startup
-- **server/** - Spring Boot REST API with PostgreSQL
-- **mock_exchange_rate_server/** - Express mock of the Frankfurter exchange
-  rate API, used by the E2E test pod
-- **test/** - Playwright E2E tests
-- **scripts/** - Build and deployment scripts
-- **.github/workflows/** - CI/CD pipelines
+A web app to track expenses, revenues, and budget, based on
+[skeleton-app](https://github.com/mucsi96/skeleton-app).
 
-## Key Technologies
-
-- Spring Boot 4, Java 21 (built into a GraalVM native image)
-- React 19, Vite, TanStack Query and Zod
-- PostgreSQL 17
-- Azure AD (OIDC) authentication
-- Azure Key Vault for secrets
-- Traefik reverse proxy
-- Docker multi-stage builds
-- Playwright for E2E testing
+- **client/**: React 19/Vite/TypeScript SPA, CSS Modules, TanStack Query, Zod, ECharts.
+- **server/**: Rust/Loco API, SeaORM/PostgreSQL 17, native non-root container.
+- **mock_exchange_rate_server/**: Express Frankfurter-compatible E2E mock.
+- **test/**: Playwright E2E journeys through the Traefik gateway.
+- **scripts/**: build, local database and deployment scripts.
+- **.github/workflows/**: CI/CD, numbered GHCR server releases and Azure static client artifacts.
 
 ## Development Commands
 
-### Frontend
 ```bash
-cd client && npm start        # Start dev server
-cd client && npm run build    # Production build
-cd client && npm run lint     # ESLint and React hooks checks
+cd client && npm start
+cd client && npm run lint && npm test && npm run build
+cd server && cargo run -- start
+cd server && cargo fmt --all --check
+cd server && cargo clippy --locked --all-targets -- -D warnings
+cd server && cargo build --locked
+scripts/dev_db_up.sh
+scripts/dev_db_down.sh
+scripts/pod_up.sh
+scripts/pod_down.sh
+cd test && npm test
+cd test && npx playwright test --ui
 ```
 
-### Backend
-```bash
-cd server && mvn spring-boot:run -Dspring-boot.run.profiles=local  # Start with local profile
-```
-
-Local development still runs on a plain JVM. The native image is built only by
-the container build - see **Native image and the baked-in Spring profile**
-below.
-
-### Podman Development
-```bash
-scripts/pod_up.sh             # Build images and start test pod
-scripts/pod_down.sh           # Stop and clean up test pod
-scripts/dev_db_up.sh          # Start development PostgreSQL database
-scripts/dev_db_down.sh        # Stop development database
-```
-
-### Testing
-```bash
-cd test && npm test           # Run E2E tests
-cd test && npx playwright test --ui  # Interactive test runner
-```
+Local backend setup and environment variables are documented in
+`docs/backend.md`; copy `server/.env.example` to gitignored `server/.env`.
+The database is started explicitly by `scripts/dev_db_up.sh`.
 
 ## API Routes
 
-- `GET /api/expenses` - List expenses (authenticated)
-- `DELETE /api/expenses` - Delete all expenses (authenticated)
-- `PUT /api/expenses/{id}/category` - Assign an existing category to an
-  expense (authenticated; unknown categories are rejected with 422). Also
-  binds the category to the expense's merchant (the description):
-  every other expense at the same merchant is re-categorized and the
-  binding is applied to future imports
-- `GET /api/categories` - List categories sorted by name (authenticated)
-- `POST /api/categories` - Create a category with optional emoji and
-  description (authenticated; duplicate names are rejected with 409)
-- `PUT /api/categories/{id}` - Update a category's name, emoji and
-  description; renaming updates all expenses using the old name
-  (authenticated)
-- `DELETE /api/categories/{id}` - Delete a category; expenses keep their
-  category text (authenticated)
-- `GET /api/settings` - App settings: monthly closing day, monthly budget and reporting currency
-  (authenticated)
-- `PUT /api/settings` - Update the settings; a closing day outside 1-31 is
-  rejected with 400 (authenticated). The optional monthly budget must be between
-  0 and 999999999.99 with at most two decimal places; omitting it preserves the stored budget.
-- `POST /api/bank-notifications` - Receive a bank card notification email from
-  the Cloudflare email worker (bearer-token authenticated, see below)
+- `GET /api/expenses`: list expenses, newest first with null dates last.
+- `DELETE /api/expenses`: delete expenses, retaining categories and merchant bindings.
+- `PUT /api/expenses/{id}/category`: assign an existing category; unknown categories return 422. Also binds the expense's merchant (description), recategorizes every expense at that merchant, and applies to future imports.
+- `GET /api/categories`: list categories sorted by name.
+- `POST /api/categories`: create a category with optional emoji/description; duplicate names return 409.
+- `PUT /api/categories/{id}`: update metadata; renaming updates expenses and merchant bindings using the old name.
+- `DELETE /api/categories/{id}`: delete the category and its merchant bindings; expenses retain their category text.
+- `GET /api/settings`: closing day, monthly budget and reporting currency.
+- `PUT /api/settings`: closing day must be 1–31; budget must be 0–999999999.99 with at most two decimal places. Invalid values return 400. Omitted/null budget preserves the stored budget.
+- `POST /api/bank-notifications`: receive worker email JSON (`from`, `to`, `subject`, `raw`), authenticated separately with a static bearer token.
+
+## Authentication
+
+- Gateway documents authenticate through a per-app oauth2-proxy session before startup.
+- `/oauth2/userinfo` supplies display-only profile data; browsers store no OAuth tokens.
+- API middleware validates JWT signature, issuer, audience, `api-access` scope, and the appropriate `readExpenses`, `createExpenses` or `deleteExpenses` role.
+- Mutations require `__Host-XSRF-TOKEN` / `X-XSRF-TOKEN`, including bearer requests supplied by the proxy.
+- Only POST `/api/bank-notifications` bypasses gateway session checks and CSRF. Its constant-time bearer-token check remains mandatory; missing/wrong tokens return 401.
+- Missing or blank worker token fails startup. Production uses Key Vault's existing `bank-notification-token` secret.
+- `/healthz` is unauthenticated database readiness, used by the native `--healthcheck` command.
+- Test fixtures supply gateway identity while the real API validates JWT/CSRF.
 
 ## Data Model
 
-- **expenses** - Stores expenses (date, description, location, category,
-  amount, currency, converted_amount, base_currency, method, type, comment)
-- **categories** - Stores the categories offered when assigning transactions
-  (name unique, optional emoji and description; blank emoji/description are
-  stored as null). Expenses reference categories by name, not by foreign key;
-  renaming a category rewrites the name on its expenses. The table is managed
-  on the mobile-first `/settings/categories` route, and the home route
-  assigns a category to a transaction via a bottom sheet. The home list shows
-  the category's emoji on the transaction chip and its description as a
-  tooltip; the picker sheet shows both.
-- **merchant_categories** - Binds a merchant (the expense description,
-  unique) to a category name. Recorded/updated whenever a transaction is
-  categorized: all expenses at that merchant get the category, and imported
-  expenses (e.g. bank notifications) without a category pick up the bound
-  one automatically. Renaming a category renames its bindings; deleting a
-  category deletes them (while expenses keep their category text). The
-  table was seeded from merchants whose existing expenses all share one
-  category.
+- **expenses**: `expense_date`, description, location, category, amount, currency, converted_amount, base_currency, method, type, comment. Categories are text, not foreign keys.
+- **categories**: unique name, optional emoji and description; blank metadata is stored as null. Managed at `/settings/categories`; assigned through the home bottom sheet. The list uses category emoji and description tooltips.
+- **merchant_categories**: unique merchant description mapped to category name. Assignment updates all expenses at that merchant. Rename updates bindings; delete removes them. Existing bindings were seeded from merchants whose expenses shared one category.
+- **settings**: one migration-seeded row, closing day 31 and monthly budget 0 by default. Zero budget means unconfigured. A missing row is an error, not a reason to silently reseed.
 
-- **settings** - Single row of app settings, seeded by the migration. Holds
-  the monthly closing day (default 31): a monthly period ends on that day of
-  the month, transactions after it count towards the next month, and the
-  period is named after the month it closes in. 31 covers every month end,
-  i.e. plain calendar months. Also holds the monthly budget in the reporting
-  currency (default 0, meaning not configured). Edited on the `/settings` route.
+Amounts are positive; `type` is `Expense` (debit) or `Income` (credit).
+`amount`/`currency` hold original values; `converted_amount`/`base_currency`
+hold reporting values (CHF by default). Reporting uses converted amounts,
+duplicate detection uses original amounts.
 
-Amounts are always positive; the `type` field ("Expense" or "Income") tells
-whether money went out (Debit) or came in (Credit).
+## Budget and Filters
 
-`amount`/`currency` hold the original transaction value in the currency it was
-made in. `converted_amount`/`base_currency` hold the same value converted to the
-reporting currency (CHF by default, configurable via
-`expense-tracker.base-currency`). Reporting (e.g. the monthly chart) uses the
-converted amount so mixed currencies aggregate correctly, while duplicate
-detection uses the original amount.
+The home page opens on Budget burndown; Monthly spending contains the category
+chart. A closing period ends on the configured day (clamped to the month end)
+and is named after that closing month. Transactions after it count toward the
+next month. Closing day 31 means calendar months.
 
-## Budget Burndown
+Burndown is budget minus cumulative converted spending, including uncategorized
+expenses and excluding income. Category filters do not affect it. Actuals stop
+at today; ideal declines evenly from opening budget to zero at closing. Negative
+balances show overspending. All asks for a single month; zero budget links to Settings.
 
-The home page opens on the Budget burndown tab; Monthly spending contains the
-category chart. The burndown follows the selected month's closing period and
-shows budget minus cumulative converted spending, including uncategorized
-expenses and excluding income. Category filters do not affect the budget.
-Actuals stop at today, while the ideal line declines evenly from the opening
-budget to zero at the closing date. Negative balances show overspending.
-Selecting All asks for a single month; a zero budget links to Settings.
-
-The date-boundary calculation tests run with
-`node --test client/tests/budget-burndown.test.ts` (Node 24 or newer).
-
-## Transaction List Filters
-
-The home route filters the transaction list by month and by category. Months
-are closing periods, not necessarily calendar months: the configurable
-closing day (see the settings table) decides which month a transaction
-belongs to, and the chart groups spending the same way. Both
-filters live in the URL query (`?month=yyyy-MM&category=<name>`, month
-defaulting to the current one and `all` listing every month), so a filtered
-view survives a reload and can be shared. A category is picked straight from
-the monthly chart - by tapping a stacked bar segment or a category in the
-legend. A bar segment also selects the month it belongs to; the legend spans
-every month and keeps the selected one. Hovering a bar segment shows a
-minimal, non-interactive tooltip with just that category's name and total
-for the month. The active category is shown as a chip above the month filter
-that clears the filter when tapped, next to the number of matching
-transactions, and the total spend follows both filters. Category picks push a
-history entry so the back gesture returns to the unfiltered list, while month
-switches replace it. Uncategorized transactions are hidden while a category is
-selected, and they are left out of the chart entirely - every category in the
-chart is one the list can be filtered by.
+Filters live in URL query parameters (`?month=yyyy-MM&category=<name>`), with
+month defaulting to current and `all` listing every month. Chart segment picks
+select category and month; legend picks keep the month. The tooltip shows only
+category and total. A removable category chip appears next to transaction count;
+total spend follows both filters. Category picks push history; month switches
+replace it. Uncategorized transactions are excluded while a category is selected
+and from the category chart. Date-boundary checks run with
+`node --test client/tests/budget-burndown.test.ts` (Node 24+).
 
 ## Bank Notifications
 
-A Cloudflare Email Worker receives bank card notification emails and forwards
-each one as JSON (`from`, `to`, `subject`, `raw`) to
-`POST /api/bank-notifications`. The endpoint parses the card debit
-notification into a "Card payment" expense. The HTML part of the raw MIME
-message is decoded (quoted-printable/base64 transfer encodings, nested
-multiparts), reduced to its text (tags stripped, `<br>`/block ends become
-line breaks, basic entities decoded) and the transaction is extracted from
-it. Plain-text parts are ignored — the banks' notifications carry the
-transaction only in HTML while their sole plain-text part is a legal
-disclaimer — so an email without an HTML part is not recognized. The
-notification must be bracketed between `<!-- NOTIFICATION_CONTENT_BEGIN -->`
-/ `<!-- NOTIFICATION_CONTENT_END -->` comment markers (as UBS does); only
-that region is considered, so money values in headers, previews or footers
-cannot shadow the transaction, and HTML without the markers is not
-recognized. Extraction rules:
+Parse raw MIME HTML, decoding quoted-printable/base64 and nested multiparts.
+Ignore plain text (bank emails use it for legal disclaimers). Require the
+`<!-- NOTIFICATION_CONTENT_BEGIN -->` / `<!-- NOTIFICATION_CONTENT_END -->`
+region, ignoring money elsewhere. Strip tags, preserve block/line breaks and
+decode basic entities. Extraction supports:
 
-- **amount** - a labeled line (`Amount: CHF 12.50`, `Betrag: ...`) or the
-  first `CHF 12.50` / `12.50 CHF` money value with a valid ISO 4217 code
-  (pseudo-currencies like XXX are rejected so masked card numbers don't match)
-- **merchant** (stored as the description) - a labeled line
-  (`Merchant: ...`, `Händler: ...`), the `... CHF 12.50 at Coffee Shop ...`
-  charge sentence, or the sentence following
-  `CHF 12.50 have been charged to card "1234".` (UBS phrasing)
-- **date** - a labeled line (`Date: 04.08.2026 08:44`) or an `on 04.08.2026`
-  sentence (interpreted in Europe/Zurich), falling back to the email's `Date`
-  header
+- Amount labels (`Amount`, `Betrag`, `Montant`, `Importo`) or currency-first/last values with valid ISO currencies; reject pseudo-currencies such as XXX.
+- Merchant labels, `CHF 12.50 at Coffee Shop ...` sentences, and the sentence after `CHF 12.50 have been charged to card "1234".`
+- Date labels or `on 04.08.2026` sentences interpreted in Europe/Zurich; otherwise use the email Date header.
 
-Foreign amounts go through the usual currency conversion for the transaction
-date, and the regular duplicate detection (same day, description and whole
-amount) swallows redelivery of the same email. A notification where amount,
-merchant or date cannot be extracted is not recognized: it is logged as an
-error with all email details (from, to, subject and raw content, exactly what
-the endpoint logged before parsing existed) and rejected with 422 so the
-worker fails the delivery and the parser can be extended from the logs.
+Store as Card payment / Expense. Unknown formats log all original email details
+and return 422 so the worker fails delivery and the parser can be extended.
+Duplicate identity is UTC day, merchant and whole original amount, truncating
+fractional units; redelivery succeeds without another row.
 
-The endpoint is not part of the Azure AD user flow; it has its own security
-filter chain that authenticates the worker with a static bearer token compared
-in constant time. The token comes from the `bank-notification-token` property —
-the Azure Key Vault secret of the same name in prod, fixed values in the `test`
-and `local` profiles. A missing or blank token fails startup; a missing or
-wrong `Authorization: Bearer` header yields 401, which makes the worker fail
-the delivery so the sending mail server retries later.
+Foreign amounts use Frankfurter historical rates, cached for one day by currency
+and transaction date, with decimal half-up rounding to two places. Base-currency
+amounts need no request. Tests use the real provider against the mock service;
+production needs outbound access to `api.frankfurter.dev`.
 
-### Currency conversion
+## Configuration and Database Lifecycle
 
-Foreign-currency transactions are stored with both their original amount and a
-converted amount in the base currency (CHF). Conversion uses the public
-[Frankfurter](https://frankfurter.dev) exchange-rate API (ECB reference rates,
-no API key), looked up for the transaction date and cached in memory for one
-day (`expense-tracker.exchange-rate-api-url`, default `https://api.frankfurter.dev/v1`).
-Rows already in the base currency are stored unchanged; a foreign amount without
-a transaction date fails fast rather than being silently treated as CHF. E2E
-tests run the real provider against a Frankfurter-compatible Express mock
-(`mock_exchange_rate_server/`, wired into the test pod and pointed at via
-`application-test.yml`) so tests need no external network. Prod/local
-deployments need outbound access to the API host.
+One native image serves every environment; `LOCO_ENV` chooses configuration at
+runtime. Production uses Azure workload identity and existing Key Vault secrets.
+See `docs/backend.md` for environment variables and CLI operations.
 
-Duplicates are skipped: an expense with the same day, description and whole
-(original) amount as an existing one is not stored again. Using the original
-amount keeps duplicate detection stable regardless of conversion.
+The SeaORM baseline initializes only fresh databases. Existing schemas must have
+the seven previous release migrations applied and are adopted without modifying
+data, identities, sequences or Liquibase history. Never reset/reseed persisted
+user data. Baseline rollback is deliberately refused. Future changes use additive
+SeaORM migrations. The test pod restarts the server against the migrated DB.
 
-## Configuration Patterns
-
-### Spring Profiles
-- **prod** - Production with Azure Key Vault and AAD
-- **local** - Local development with Podman DB
-- **test** - Testing with mock OIDC provider
-
-## Native image and the baked-in Spring profile
-
-The server is compiled ahead of time into a GraalVM native executable linked
-against musl, so there is no JRE in the runtime image and startup is in the tens
-of milliseconds rather than seconds.
-
-Ahead-of-time processing resolves bean definitions at build time, which means
-the active Spring profile is decided by the build, not by the environment:
-Spring AOT emits an `EnvironmentPostProcessor` that activates the profile the
-image was built with. `SPRING_PROFILES_ACTIVE` is no longer read at runtime, and
-`test/test-pod.yaml` no longer sets it. Build one image per profile with the
-`SPRING_PROFILE` build argument - `test` for the e2e pod, `prod` for the image
-published to GHCR:
-
-```bash
-podman build --build-arg SPRING_PROFILE=test \
-  -t localhost/expense-tracker-server:test server
-```
-
-Build-time details that live in `server/pom.xml` and are easy to trip over:
-
-- AOT processing refreshes the application context, so every placeholder an
-  auto-configuration condition reads has to resolve during the build. The
-  `process-aot` execution supplies build-time stand-ins for them and turns the
-  Key Vault property source off, so the build never reaches out to Azure. The
-  stand-ins are not baked into the image; they only have to make the same
-  conditions match as the real values do at runtime. A new required environment
-  placeholder read by a condition means adding it there too. Placeholders that
-  are only read while creating beans (`${db-url}`, `${bank-notification-token}`)
-  are resolved at runtime as before and need nothing.
-- Spring AOT generates bean-definition classes into the packages of the
-  configuration classes it processes, including the signed Spring Cloud Azure
-  jars. Mixing generated (unsigned) and signed classes in one package makes the
-  native-image builder throw `SecurityException: ... signer information does not
-  match`, so the builder is pointed at `server/native-image.security`, which
-  disables jar signature verification.
-- Jars can ship a `META-INF/native-image/.../native-image.properties` that forces
-  classes to build-time initialization. When such a class holds on to objects of
-  types that are still initialized at run time, the builder fails with
-  `UnsupportedFeatureException: An object of type ... was found in the image
-  heap`. `--initialize-at-build-time` in the `native-maven-plugin` config covers
-  the Jackson core classes `azure-core` leaves behind that way. Note that a build
-  cannot undo such a directive: `exclude-config` does not apply to
-  `native-image.properties`, and `initialize-at-run-time` for the same class is
-  rejected outright. That is why `azure-core` is pinned ahead of the version the
-  Azure BOM selects - the BOM's 1.58.1 forces SLF4J and logback to build-time
-  initialization, which is irreconcilable with Spring Boot setting logging up at
-  run time. Check this again when the Azure BOM moves.
-- The Azure SDK's `ExpandableStringEnum` constants are built by instantiating the
-  subclass reflectively, and `fromString` returns `null` rather than failing when
-  it cannot. Missing reflection metadata therefore surfaces as every constant of
-  a class being `null` and a `NullPointerException` far from the cause.
-  `AzureNativeHints` registers the subclasses azure-identity does not ship
-  metadata for.
-- azure-core decides how to read a response body by asking the model class
-  whether it declares the `fromXml` / `fromJson` pair azure-xml and azure-json
-  generate, and it asks with `Class.getDeclaredMethods()`. In a native image that
-  returns nothing for a class with no reachability metadata, so the answer is
-  silently "no" and azure-core falls back to Jackson - for XML that means an
-  `XmlMapper`, and jackson-dataformat-xml is not on the classpath, so the call
-  dies with a `NoClassDefFoundError`. The SDK ships metadata for most of its
-  models but not all. `AzureNativeHints` scans `com.azure` and registers every
-  `XmlSerializable`, `JsonSerializable` and `HttpResponseException` instead of
-  naming the ones missing today, so an SDK upgrade cannot reintroduce this.
-- The Key Vault property source is configured by an `EnvironmentPostProcessor`
-  that runs before there is an application context and reads its own settings
-  with a plain `Binder` over `AzureKeyVaultSecretProperties`. Nothing in the
-  framework infers that, and the auto-configuration that would otherwise
-  contribute the binding metadata for that type never matches here - it is
-  conditional on `spring.cloud.azure.keyvault[.secret].endpoint`, while this
-  application configures the endpoint under `...secret.property-sources[0]`. With
-  no members in the image the binder binds nothing, and an absent binding is
-  indistinguishable from an empty configuration, so the post-processor quietly
-  concludes there is no property source to add. Nothing fails at that point: the
-  image starts and then dies much later on the first secret-backed placeholder.
-  `KeyVaultPropertySourceNativeHints` supplies the metadata. Only the prod
-  profile reads secrets from Key Vault, so no test covers this - after changing
-  anything about the Key Vault configuration, check that the generated
-  `target/spring-aot/main/resources/META-INF/native-image/**/reachability-metadata.json`
-  still carries `AzureKeyVaultSecretProperties` and
-  `AzureKeyVaultPropertySourceProperties` with their accessors.
-
-- The reachability metadata the repository ships for liquibase-core is
-  conditional and was traced against an empty database: the getters Liquibase
-  reads reflectively to compute a change set's checksum are registered only
-  once `UpdateVisitor`, the visitor that executes change sets, has been
-  reached. On a fresh database that is early enough. On a database that already
-  carries the change sets - every production start - `ValidatingVisitor`
-  computes the checksums first, to compare them with the stored ones, and the
-  image dies with `MissingReflectionRegistrationError: Cannot reflectively
-  invoke method ... AbstractModifyDataChange.getCatalogName()` before
-  `UpdateVisitor` is ever reached. `LiquibaseNativeHints` registers every
-  change type with all of its public methods, over the whole class hierarchy.
-  The e2e pod starts on an empty database and cannot see this on its own, so
-  `scripts/pod_up.sh` restarts the server once the pod is up: the second start
-  validates checksums the way production does, and the tests run against it.
-
-Spring Cloud Azure needs one workaround in application code:
-`AzureGlobalPropertiesConfiguration` re-declares the `AzureGlobalProperties`
-bean. Spring Cloud Azure registers it from an `ImportBeanDefinitionRegistrar`
-using a lambda instance supplier, which AOT cannot turn into generated code, so
-it drops the bean and the image fails to start with "required a bean of type
-AzureGlobalProperties that could not be found". See the class comment for why it
-uses its own bean name. That workaround turns on Spring Cloud Azure's
-registration order, which is not a public contract, so smoke-test the image
-whenever `spring-cloud-azure-dependencies` moves - a change there could drop the
-bean again with no compile-time signal.
-
-The MIME parsing behind `/api/bank-notifications` needs nothing: angus-mail and
-angus-activation ship native-image features of their own that register the mail
-providers and content handlers.
-
-The image is deliberately not built with `--static`. A fully static binary links
-but then segfaults the moment it starts in the container - before GraalVM
-installs its own segfault handler, so with no output whatsoever, which looks
-exactly like a container that silently never starts.
-
-### Reproducing AOT problems without a native build
-
-Most AOT problems reproduce without waiting for a native compile (which takes
-several minutes). Run the AOT-processed application on a normal JVM:
-
-```bash
-cd server
-mvn -Pnative package -DskipTests -Dapp.profile=test
-java -Dspring.aot.enabled=true -jar target/expense-tracker-0.0.1-SNAPSHOT.jar
-```
-
-That exercises the generated context - missing bean definitions, profile and
-condition mismatches - in seconds. Only class-initialization and reflection
-problems need the real `mvn -Pnative native:compile`.
-
-Types that are only ever bound reflectively need explicit hints. Controller
-request/response types, JPA entities and Spring Data repositories are covered by
-the framework's own AOT processing and need nothing. Types read with a plain
-`ObjectMapper` or a `RestClient` want `@RegisterReflectionForBinding` - see
-`FrankfurterExchangeRateProvider`, whose exchange-rate response is such a type;
-types bound by a `Binder` rather than Jackson want
-`BindableRuntimeHintsRegistrar`, which registers exactly what `JavaBeanBinder`
-looks for over the whole class hierarchy - see
-`KeyVaultPropertySourceNativeHints`.
-
-### Release and image publishing
+## Release and Deployment
 
 `publish-server` publishes numbered GHCR images only when
-`get_next_version.outputs.hasNextVersion == 'true'`, tagging them with
-`get_next_version.outputs.version`. Authentication uses `GITHUB_TOKEN` with
-job-scoped `packages: write`. Release tags use `target_commitish: ${{ github.sha }}`.
-The action always returns `version` and `tag`, including the current reachable
-release when unchanged; `hasNextVersion` alone controls publication. Forward its
-version output directly to deployment without a consumer-side tag lookup.
-The workflow serializes publication and rollout; require numbered GHCR tags or
-digests.
-The server package must be public for anonymous Kubernetes pulls.
-`publish-client` packages the tested `client-static` artifact as a release
-tarball. Deployment empties `$web` and `assets`, then uploads the latest assets
-before index HTML. Downtime is intentional; no production client container is built.
+`get_next_version.outputs.hasNextVersion == 'true'`, tagging with its `version`.
+Authentication uses job-scoped `GITHUB_TOKEN` with `packages: write`. Release
+tags use `target_commitish: ${{ github.sha }}`. The action always returns version
+and tag; forward the version directly to deployment without another tag lookup.
+Publication and rollout are serialized. Require numbered image tags or digests;
+the server package must be public for anonymous Kubernetes pulls.
 
-### Gateway authentication and static hosting
-- Gateway documents authenticate through a per-app oauth2-proxy session before startup.
-- `/oauth2/userinfo` supplies display-only profile data; browsers store no OAuth tokens.
-- The API preserves JWT scope/role checks and requires `__Host-XSRF-TOKEN` /
-  `X-XSRF-TOKEN` for mutations, including bearer requests supplied by the proxy.
-- Only POST `/api/bank-notifications` bypasses gateway session checks; its token
-  filter remains mandatory and its chain is CSRF-exempt.
-- Faro's app name and same-origin `/_telemetry/collect` are compiled into the bundle.
-- p07 owns auth/storage prerequisites. Deploy uses spring-app 37.0.0 and
-  static-client-app 5.0.0 with reset values. See `docs/static-hosting.md`.
-- Test fixtures supply gateway identity while the real API validates JWT/CSRF.
+`publish-client` packages tested `client-static` as a release tarball. Deployment
+empties `$web` and `assets`, then uploads assets before index HTML. Downtime is
+intentional; no production client container is built.
+
+p07 owns auth/storage prerequisites. Deployment uses rust-app 7.0.0 and
+static-client-app 5.0.0 with reset values, preserving the API service name, port,
+gateway routes and workload identity. See `docs/static-hosting.md`.
+Faro's app name and same-origin `/_telemetry/collect` are compiled into the bundle.
