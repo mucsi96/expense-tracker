@@ -9,12 +9,12 @@ following the [shared architecture](https://github.com/mucsi96/skeleton-app/issu
   Redis session configuration, Azure website/Blob storage, exact app-origin
   CORS, CI upload roles and deployment secrets. Existing API registration,
   expense roles, database credentials, schema, worker token and PVs are retained.
-- Application charts: spring-app **37.0.0** checks sessions on `/api` and forwards
+- Application charts: rust-app **7.0.0** checks sessions on `/api` and forwards
   access tokens; static-client-app **5.0.0** authenticates document navigation,
   rewrites SPA deep links and strips credentials before fetching Azure HTML.
 - Backend: validates JWT issuer, audience, scope and roles and requires CSRF for
   mutations even when the gateway supplies bearer authentication. The bank
-  filter chain independently validates its worker token and is CSRF-exempt.
+  POST handler independently validates its worker token and is CSRF-exempt.
 - Logging: exact same-origin `/_telemetry/collect` route with origin/rate controls
   and credential stripping. The bundle compiles the URL and app name.
 

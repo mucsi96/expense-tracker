@@ -2,15 +2,16 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "java",
+      "type": "lldb",
       "name": "Start server",
       "request": "launch",
       "cwd": "${workspaceFolder}/server",
-      "mainClass": "io.github.mucsi96.expensetracker.ExpenseTrackerApplication",
-      "args": "--spring.profiles.active=local",
-      "env": {
-        "AZURE_KEYVAULT_ENDPOINT": "https://p06-expense-tracker.vault.azure.net"
-      }
+      "cargo": {
+        "args": ["build", "--manifest-path", "${workspaceFolder}/server/Cargo.toml"],
+        "filter": { "name": "expense-tracker-server", "kind": "bin" }
+      },
+      "args": ["start", "--no-banner"],
+      "envFile": "${workspaceFolder}/server/.env"
     }
   ]
 }
