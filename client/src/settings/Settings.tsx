@@ -111,9 +111,11 @@ function SettingsForm({ settings }: { settings: SettingsData }) {
       <Card>
         <h2>Categories</h2>
         <p>Manage the categories used to group your transactions.</p>
-        <Link to="/settings/categories">Manage categories</Link>
+        <Link to="/settings/categories" className={styles.categoriesLink}>
+          Manage categories
+        </Link>
       </Card>
-      <Card>
+      <Card className={styles.danger}>
         <h2>Danger zone</h2>
         <p>Remove all imported transactions from the database. This action cannot be undone.</p>
         <DialogTrigger>

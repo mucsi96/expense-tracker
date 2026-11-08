@@ -1,3 +1,23 @@
+.page {
+  max-width: 40rem;
+  margin-inline: auto;
+}
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.empty {
+  color: var(--bt-text-muted);
+  padding-block: 2rem;
+  text-align: center;
+}
 .form {
   display: grid;
   gap: 1rem;

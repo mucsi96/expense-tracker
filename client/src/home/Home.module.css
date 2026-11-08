@@ -46,6 +46,11 @@
   height: auto;
   white-space: normal;
   text-align: left;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+}
+.chip[data-variant='outlined'] {
+  border-color: var(--bt-outline);
 }
 .amounts {
   display: flex;
@@ -58,7 +63,7 @@
   color: var(--bt-text-muted);
 }
 .income {
-  color: var(--bt-success);
+  color: var(--bt-success-soft);
 }
 .months {
   display: flex;
@@ -124,6 +129,21 @@
 }
 .filter button {
   min-height: 44px;
+}
+.filterChip[data-variant='outlined'] {
+  max-width: 100%;
+  padding: 0.5rem 0.875rem;
+  border-color: var(--bt-text-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bt-text-strong) 12%, transparent);
+  text-align: left;
+}
+.filterName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.filterIcon {
+  flex-shrink: 0;
 }
 .options {
   display: grid;
