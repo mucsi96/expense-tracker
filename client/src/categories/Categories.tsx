@@ -10,7 +10,8 @@ import {
   type Category,
   type CategoryAttributes,
 } from '../api';
-import { Loading, LoadError } from '../Loading';
+import { LoadError } from '../LoadError';
+import { LoadingArea } from '@mucsi96/react-ui';
 import styles from './Categories.module.css';
 
 const empty = { name: '', emoji: '', description: '' };
@@ -43,7 +44,7 @@ export default function Categories() {
       </div>
       <CategoryForm onSaved={refresh} />
       {query.isPending ? (
-        <Loading label="Loading categories" />
+        <LoadingArea label="Loading categories" fill />
       ) : query.isError ? (
         <LoadError retry={() => void query.refetch()} />
       ) : !query.data.length ? (

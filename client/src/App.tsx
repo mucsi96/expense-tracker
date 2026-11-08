@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
-import { AppMain } from '@mucsi96/react-ui';
+import { AppMain, LoadingArea } from '@mucsi96/react-ui';
 import { Header } from './Header';
-import { Loading } from './Loading';
+import styles from './App.module.css';
 
 const Home = lazy(() => import('./home/Home'));
 const Settings = lazy(() => import('./settings/Settings'));
@@ -10,10 +10,10 @@ const Categories = lazy(() => import('./categories/Categories'));
 
 export function App() {
   return (
-    <>
+    <div className={styles.layout}>
       <Header />
-      <AppMain>
-        <Suspense fallback={<Loading label="Loading page" />}>
+      <AppMain className={styles.main}>
+        <Suspense fallback={<LoadingArea label="Loading page" fill />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/settings" element={<Settings />} />
@@ -31,6 +31,6 @@ export function App() {
           </Routes>
         </Suspense>
       </AppMain>
-    </>
+    </div>
   );
 }

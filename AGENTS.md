@@ -34,7 +34,7 @@ Skeleton sync: follow `.github/prompts/sync-skeleton.md` in a weekly scheduled t
 - Validate API responses with Zod; keep OAuth at the gateway and attach the CSRF proof only to same-origin mutations.
 - React Router owns routes and URL filters. Lazy-load pages and charts.
 - Verify user journeys with Playwright, using role-based and semantic selectors.
-- Use the dark theme and skeleton loaders for loading states.
+- Use the dark theme and shared LoadingArea loaders centered in their page or section.
 
 ## Architecture
 

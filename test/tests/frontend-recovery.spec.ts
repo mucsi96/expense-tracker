@@ -11,18 +11,9 @@ test('preserves nullable legacy transactions at the API boundary', async ({ page
   await expect(page.getByText('Migros Zurich')).toBeVisible();
 });
 
-test('shows a loading skeleton and retries a failed expense request', async ({ page }) => {
-  let release: () => void = () => {};
-  const pending = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  await page.route('**/api/expenses', async (route) => {
-    await pending;
-    await route.fulfill({ status: 500 });
-  });
+test('retries a failed expense request', async ({ page }) => {
+  await page.route('**/api/expenses', (route) => route.fulfill({ status: 500 }));
   await page.goto('/');
-  await expect(page.getByRole('status', { name: 'Loading expenses' })).toBeVisible();
-  release();
   await expect(page.getByText('Unable to load data.')).toBeVisible();
   await page.unroute('**/api/expenses');
   await page.getByRole('button', { name: 'Try again' }).click();

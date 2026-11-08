@@ -1,10 +1,10 @@
 import { lazy, Suspense, useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { Button } from '@mucsi96/react-ui';
+import { Button, LoadingArea } from '@mucsi96/react-ui';
 import { categoriesQuery, expensesQuery, settingsQuery, type Category, type Expense, type Settings } from '../api';
 import { currentMonthKey, toMonthKey, toMonthLabel } from '../domain/month';
-import { Loading, LoadError } from '../Loading';
+import { LoadError } from '../LoadError';
 import { ExpenseList } from './ExpenseList';
 import { CategoryPicker } from './CategoryPicker';
 import styles from './Home.module.css';
@@ -21,7 +21,7 @@ export default function Home() {
       <title>Expenses</title>
       <h1>Expenses</h1>
       {expenses.isPending || categories.isPending || settings.isPending ? (
-        <Loading label="Loading expenses" />
+        <LoadingArea label="Loading expenses" fill />
       ) : expenses.isError || categories.isError || settings.isError ? (
         <LoadError
           retry={() => {
@@ -114,7 +114,7 @@ function Expenses({
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        <Suspense fallback={<Loading label="Loading chart" />}>
+        <Suspense fallback={<LoadingArea label="Loading chart" />}>
           {tab === 'budget' ? (
             <BudgetBurndown expenses={expenses} settings={settings} month={month} />
           ) : (

@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Card, Dialog, DialogTrigger, useNotifications } from '@mucsi96/react-ui';
 import { Link } from 'react-router-dom';
 import { deleteResource, fetchJson, settingsQuery, settingsSchema, type Settings as SettingsData } from '../api';
-import { Loading, LoadError } from '../Loading';
+import { LoadError } from '../LoadError';
+import { LoadingArea } from '@mucsi96/react-ui';
 import styles from './Settings.module.css';
 
 export default function Settings() {
@@ -13,7 +14,7 @@ export default function Settings() {
       <title>Settings</title>
       <h1>Settings</h1>
       {query.isPending ? (
-        <Loading label="Loading settings" />
+        <LoadingArea label="Loading settings" fill />
       ) : query.isError ? (
         <LoadError retry={() => void query.refetch()} />
       ) : (
