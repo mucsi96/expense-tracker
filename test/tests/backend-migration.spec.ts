@@ -21,8 +21,9 @@ test('adopts a populated previous-release database without changing data or sequ
     const before = await snapshot();
     const beforeSequences = await sequences();
     for (let start = 0; start < 2; start++) {
+      // This one-shot command must not inherit the pod's Always restart policy.
       await exec('podman', [
-        'run', '--rm', '--pod', 'expense-tracker-test',
+        'run', '--rm', '--restart=no', '--pod', 'expense-tracker-test',
         '-e', 'LOCO_ENV=test', '-e', `DATABASE_URL=postgres://postgres:postgres@localhost:5432/${database}`,
         '-e', 'OIDC_ISSUER=http://localhost:8060/default', '-e', 'API_CLIENT_ID=mock-api-client-id',
         '-e', 'BANK_NOTIFICATION_TOKEN=test-bank-notification-token', '-e', 'EXCHANGE_RATE_API_URL=http://localhost:8065/v1',
