@@ -2,6 +2,14 @@
   display: grid;
   gap: 1.5rem;
 }
+.danger {
+  border-color: var(--bt-error);
+}
+.categoriesLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
 .form {
   display: flex;
   flex-wrap: wrap;

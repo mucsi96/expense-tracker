@@ -132,10 +132,17 @@ function Expenses({
         <div className={styles.filter}>
           <Button
             variant="outlined"
+            className={styles.filterChip}
             aria-label={`Clear category filter: ${category}`}
             onPress={() => apply(month, null)}
           >
-            {categories.find((item) => item.name === category)?.emoji} {category} ✕
+            <span className={styles.filterIcon} aria-hidden="true">
+              {categories.find((item) => item.name === category)?.emoji}
+            </span>
+            <span className={styles.filterName}>{category}</span>
+            <span className={styles.filterIcon} aria-hidden="true">
+              ✕
+            </span>
           </Button>
           <span>
             {filtered.length} {filtered.length === 1 ? 'transaction' : 'transactions'}

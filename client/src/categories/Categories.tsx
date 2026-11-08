@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Dialog, DialogTrigger, TextField, useNotifications } from '@mucsi96/react-ui';
 import {
@@ -32,14 +33,21 @@ export default function Categories() {
     onError: () => notifications.error('Failed to delete category'),
   });
   return (
-    <>
+    <div className={styles.page}>
       <title>Categories</title>
-      <h1>Categories</h1>
+      <div className={styles.header}>
+        <Link to="/settings" className={styles.back}>
+          ‹ Settings
+        </Link>
+        <h1>Categories</h1>
+      </div>
       <CategoryForm onSaved={refresh} />
       {query.isPending ? (
         <Loading label="Loading categories" />
       ) : query.isError ? (
         <LoadError retry={() => void query.refetch()} />
+      ) : !query.data.length ? (
+        <p className={styles.empty}>No categories yet. Add your first category above.</p>
       ) : (
         <ul className={styles.list}>
           {query.data.map((category) => (
@@ -81,7 +89,7 @@ export default function Categories() {
           ))}
         </ul>
       )}
-    </>
+    </div>
   );
 }
 
