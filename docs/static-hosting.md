@@ -9,12 +9,12 @@ following the [shared architecture](https://github.com/mucsi96/skeleton-app/issu
   Redis session configuration, Azure website/Blob storage, exact app-origin
   CORS, CI upload roles and deployment secrets. Existing API registration,
   expense roles, database credentials, schema, worker token and PVs are retained.
-- Application charts: rust-app **7.0.0** checks sessions on `/api` and forwards
+- Application charts: spring-app **37.0.0** checks sessions on `/api` and forwards
   access tokens; static-client-app **5.0.0** authenticates document navigation,
   rewrites SPA deep links and strips credentials before fetching Azure HTML.
 - Backend: validates JWT issuer, audience, scope and roles and requires CSRF for
   mutations even when the gateway supplies bearer authentication. The bank
-  POST handler independently validates its worker token and is CSRF-exempt.
+  filter chain independently validates its worker token and is CSRF-exempt.
 - Logging: exact same-origin `/_telemetry/collect` route with origin/rate controls
   and credential stripping. The bundle compiles the URL and app name.
 
@@ -23,9 +23,8 @@ following the [shared architecture](https://github.com/mucsi96/skeleton-app/issu
 CI builds `client/dist` once. Both E2E and the separate-origin Chromium check use
 that artifact. `scripts/prepare-client.mjs` separates `documents/index.html` from
 assets, rewrites script/link URLs and makes PWA start/scope/id point at the app
-origin. The document base stays `/`; JS/CSS bundles are not rewritten. Vite uses
-a relative asset base, including lazy module and CSS imports. Typography uses
-system fonts, so no external font origin is needed.
+origin. The document base stays `/`; JS/CSS bundles are not rewritten. Fonts are
+local and critical CSS is not inlined, so relative font URLs resolve at storage.
 
 Deployment reads `client-storage-config` (`account_name`, `hostname`,
 `assets_base_url`) and `forward-auth-config` (`release_name`, `auth`) from the app

@@ -1,0 +1,18 @@
+expense-tracker:
+  exchange-rate-api-url: http://localhost:8065/v1
+
+bank-notification-token: test-bank-notification-token
+
+spring:
+  cloud:
+    azure:
+      keyvault:
+        secret:
+          property-sources:
+            - enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8060/default
+          audiences: mock-api-client-id

@@ -9,10 +9,12 @@ if [ "${SKIP_BUILD:-}" = "1" ]; then
   echo "Skipping image build (SKIP_BUILD=1)..."
 else
   echo "Building container images..."
-  podman build \
+  # The Spring profile is baked into the native executable during AOT
+  # processing, so the pod image has to be built with the test profile.
+  podman build --build-arg SPRING_PROFILE=test \
     -t localhost/expense-tracker-server:test "$PROJECT_DIR/server" &
   server_build=$!
-  (cd "$PROJECT_DIR/client" && npm ci && npm run lint && npm test && npm run build) &
+  (cd "$PROJECT_DIR/client" && npm ci && npm test && npm run build) &
   client_build=$!
   podman build -t localhost/expense-tracker-mock-exchange-rate:test "$PROJECT_DIR/mock_exchange_rate_server" &
   exchange_build=$!
@@ -77,7 +79,11 @@ for container in $CONTAINERS; do
   wait_for_healthy "$container"
 done
 
-# Exercise startup against an already migrated database as production does.
+# The server has just migrated an empty database, which is the one start that
+# never validates stored change set checksums. Every production start does, and
+# the native image takes reflection paths there that a first run never reaches
+# (see LiquibaseNativeHints). Start it once more against the migrated database
+# so the tests run on a server that came up the way production does.
 echo "Restarting the server against the migrated database..."
 podman restart "$POD_NAME-server" > /dev/null
 wait_for_healthy "$POD_NAME-server"

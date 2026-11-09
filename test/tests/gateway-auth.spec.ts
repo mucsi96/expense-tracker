@@ -21,9 +21,7 @@ test('API independently rejects missing and forged credentials', async ({ reques
 
 test('mutations require matching CSRF cookie and header even with gateway bearer credentials', async ({ page, context, request, apiHeaders }) => {
   await page.goto('/');
-  // Profile data loads independently of the lazy page's API requests. Wait
-  // until those requests have established the API's CSRF cookie.
-  await expect(page.getByRole('radio', { name: 'All', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'TU', exact: true })).toBeVisible();
   const cookie = (await context.cookies()).find(cookie => cookie.name === '__Host-XSRF-TOKEN');
   expect(cookie).toMatchObject({ path: '/', secure: true, httpOnly: false, sameSite: 'Lax' });
   const data = { name: 'CSRF proof category' };
