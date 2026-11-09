@@ -9,39 +9,38 @@ Based on the patterns from [skeleton-app](https://github.com/mucsi96/skeleton-ap
 
 - **CI/CD Pipeline** - GitHub Actions with E2E tests, native API images and tested static client artifacts
 - **Deployment** - Traefik gateway, Azure static website documents and direct Blob assets
-- **Client** - React, Vite and TypeScript with colocated CSS Modules
-- **Server** - Rust and Loco with thin Axum controllers and typed services
+- **Client** - Angular with Material UI dark theme
+- **Server** - Spring Boot with Java 21, compiled ahead of time into a GraalVM native image
 - **Authentication** - Entra/oauth2-proxy gateway sessions; backend JWT roles and CSRF validation
-- **Configuration** - Azure Key Vault workload identity + Loco environments
-- **Database** - PostgreSQL with SeaORM models and migrations
+- **Configuration** - Azure Key Vault + Spring profiles (prod/local/test)
+- **Database** - PostgreSQL with Spring Data JPA and Liquibase
 - **Testing** - Playwright E2E tests
-- **UI Components** - `@mucsi96/react-ui` accessible dark theme and ECharts
-- **Fetching** - TanStack Query with Zod-validated API boundaries
+- **UI Components** - Material UI with custom dark theme
+- **Fetching** - Angular resource API with HttpClient
 
-## Native Rust backend
+## One image per Spring profile
 
-One native image serves every environment. `LOCO_ENV` selects `development`,
-`test`, or `production` at runtime. Production resolves the existing database,
-tenant, API audience and worker-token secrets through Azure workload identity.
-The distroless image runs as non-root; `/healthz` checks database readiness.
+The server is shipped as a GraalVM native executable. Bean definitions are
+resolved during ahead-of-time processing at build time, so the active Spring
+profile is baked into the executable and cannot be chosen at startup any more.
+The server image is therefore built once per profile, via the `SPRING_PROFILE`
+build argument:
 
 ```bash
-podman build -t localhost/expense-tracker-server:test server
-(cd server && cargo fmt --all --check && cargo clippy --locked --all-targets -- -D warnings)
+podman build --build-arg SPRING_PROFILE=test -t expense-tracker-server:test server   # e2e pod
+podman build --build-arg SPRING_PROFILE=prod -t expense-tracker-server:prod server   # published image
 ```
 
-For local development, run `scripts/dev_db_up.sh`, copy
-`server/.env.example` to `server/.env`, configure the OIDC issuer/audience, export
-its variables (`set -a; . ./.env; set +a` from `server/`), then run
-`cargo run -- start`. The test pod supplies a mock OIDC issuer
-and exchange-rate service. See [backend operations](docs/backend.md) for database
-compatibility and deployment details.
+`SPRING_PROFILES_ACTIVE` is not read at runtime; the pipeline builds the test
+image for the e2e job and the prod image when publishing to GHCR. Running
+the server on a JVM for local development is unaffected - `mvn spring-boot:run
+-Dspring-boot.run.profiles=local` still selects the profile the usual way.
 
 ## Gateway authentication and static hosting
 
-The gateway authenticates documents before React starts. OAuth tokens remain
+The gateway authenticates documents before Angular starts. OAuth tokens remain
 server-side in a per-app oauth2-proxy session backed by shared Redis; the browser
-uses a host-only HttpOnly `__Host-session` cookie. React reads display-only
+uses a host-only HttpOnly `__Host-session` cookie. Angular reads display-only
 profile data from `/oauth2/userinfo` and sends same-origin API requests. The API
 still validates JWT issuer, audience, `api-access` scope and expense roles.
 Mutations additionally require the readable Secure `__Host-XSRF-TOKEN` cookie
@@ -51,7 +50,7 @@ Only POST `/api/bank-notifications` bypasses browser session authentication; its
 existing worker bearer token remains mandatory. See [rollout details](docs/static-hosting.md).
 
 CI builds the client once, tests that artifact and publishes it to Azure assets
-before updating the document. Icons and lazy chunks load directly from
+before updating the document. Fonts, icons and lazy chunks load directly from
 Blob storage with app-origin CORS. Faro uses the compiled app name
 `expense-tracker-client` and same-origin `/_telemetry/collect`. No environment
 bootstrap endpoint or document configuration injection is needed.
@@ -69,18 +68,19 @@ avoid clashes with other local projects (skeleton-app uses xx50–xx59).
 
 | Port | Service              | Context                             |
 |------|----------------------|-------------------------------------|
-| 4260 | Vite dev server      | Local dev                           |
+| 4260 | Angular dev server   | Local dev                           |
 | 5460 | PostgreSQL           | Dev database                        |
 | 5461 | PostgreSQL           | Test pod                            |
 | 8060 | Mock OAuth2 provider | Test pod                            |
-| 8063 | Loco server          | Local dev (VSCode)                   |
-| 8064 | Loco server          | Test pod (internal, behind Traefik)  |
+| 8063 | Spring Boot server   | Local dev (VSCode)                  |
+| 8064 | Spring Boot server   | Test pod (internal, behind Traefik) |
 | 8160 | Traefik (web)        | Test pod                            |
 | 8161 | Traefik (admin)      | Test pod                            |
+| 8162 | Spring Actuator      | Local dev & test                    |
 
 ## Development Environment
 
-System tooling (Rust via rustup, Node, jq, kubectl, helm, azure-cli) is provided by
+System tooling (JDK 21, Maven, Node, jq, kubectl, helm, azure-cli) is provided by
 a Nix flake dev shell:
 
 ```bash
@@ -101,19 +101,6 @@ via your distro, e.g. `apt install podman`.
 
 ## Quick Start
 
-The frontend requires Node.js 24 or newer. Routes (`/`, `/settings`, and
-`/settings/categories`) are lazy-loaded. TanStack Query owns server state and
-invalidates expenses when category edits affect merchant bindings; URL search
-parameters own the month/category filters. The backend API is unchanged.
-
-```bash
-cd client
-npm ci
-npm run lint
-npm test             # Existing framework-independent date calculations
-npm run build       # Strict TypeScript checking and production Vite build
-```
-
 ```bash
 # Start test stack
 scripts/pod_up.sh
@@ -121,7 +108,3 @@ scripts/pod_up.sh
 # Run E2E tests
 cd test && npm test
 ```
-
-When running a test pod with remapped host ports, the Playwright suite accepts
-`TEST_BASE_URL`, `TEST_OIDC_URL`, and `TEST_DB_PORT` (defaults: localhost ports
-8160, 8060, and 5461). These affect test connections only, not API token claims.

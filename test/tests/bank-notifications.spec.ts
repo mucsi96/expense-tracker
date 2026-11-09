@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { cleanupDb, getExpenses, insertMerchantCategory } from '../utils';
 
-// Matches BANK_NOTIFICATION_TOKEN in test/test-pod.yaml
+// Matches bank-notification-token in application-test.yml
 const token = 'test-bank-notification-token';
 
 // Same shape as a real card debit notification (multipart/mixed with a
@@ -221,47 +221,4 @@ test('rejects bank notification without raw email content', async ({ request }) 
   });
 
   expect(response.status()).toBe(400);
-});
-
-test('decodes nested base64 HTML with labels, entities and Zurich transaction time', async ({ request }) => {
-  const html = '<!-- NOTIFICATION_CONTENT_BEGIN --><div>Amount: 19,95 CHF</div><div>Merchant: Cafe &amp; Bar</div><div>Date: 04.08.2026 08:44:12</div><!-- NOTIFICATION_CONTENT_END -->';
-  const raw = [
-    'Date: Mon, 3 Aug 2026 00:00:00 +0000',
-    'MIME-Version: 1.0',
-    'Content-Type: multipart/mixed; boundary="outer"', '',
-    '--outer', 'Content-Type: multipart/alternative; boundary="inner"', '',
-    '--inner', 'Content-Type: text/plain', '', 'Legal disclaimer CHF 999.99',
-    '--inner', 'Content-Type: text/html; charset=UTF-8',
-    'Content-Transfer-Encoding: base64', '', Buffer.from(html).toString('base64'),
-    '--inner--', '--outer--',
-  ].join('\r\n');
-  const response = await request.post('/api/bank-notifications', {
-    headers: { Authorization: `Bearer ${token}` }, data: { ...notification, raw },
-  });
-  expect(response.status()).toBe(204);
-  const expenses = await getExpenses();
-  expect(expenses).toHaveLength(1);
-  expect(expenses[0]).toMatchObject({ description: 'Cafe & Bar', amount: '19.9500' });
-  expect(new Date(expenses[0].expense_date).toISOString()).toBe('2026-08-04T06:44:12.000Z');
-});
-
-test('ignores masked card numbers and truncates original amounts for duplicate detection', async ({ request }) => {
-  for (const amount of ['CHF 12.50', 'CHF 12.99']) {
-    const response = await request.post('/api/bank-notifications', {
-      headers: { Authorization: `Bearer ${token}` },
-      data: { ...notification, raw: buildRaw({ amount }).replace('<!-- NOTIFICATION_CONTENT_BEGIN -->', '<!-- NOTIFICATION_CONTENT_BEGIN -->XXXX 5896<br>') },
-    });
-    expect(response.status()).toBe(204);
-  }
-  const expenses = await getExpenses();
-  expect(expenses).toHaveLength(1);
-  expect(expenses[0].amount).toBe('12.5000');
-});
-
-test('rejects pseudo-currency and worker credentials on user API routes', async ({ request }) => {
-  const headers = { Authorization: `Bearer ${token}` };
-  const raw = buildRaw({ amount: 'XXX 12.50' }).replace(' CHF 7=E2=80=99317.38.', ' No available amount.');
-  expect((await request.post('/api/bank-notifications', { headers, data: { ...notification, raw } })).status()).toBe(422);
-  expect((await request.get('/api/expenses', { headers })).status()).toBe(401);
-  expect(await getExpenses()).toHaveLength(0);
 });

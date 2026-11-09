@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { budgetBurndown } from '../src/domain/budget-burndown.ts';
-import type { Expense } from '../src/api.ts';
+import { budgetBurndown } from '../src/app/budget-burndown/budget-burndown.ts';
+import type { Expense } from '../src/app/expense.service.ts';
 
 const expense = (date: string, convertedAmount: number) => ({
   date, convertedAmount, type: 'Expense',

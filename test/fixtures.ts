@@ -5,18 +5,14 @@ import { cleanupDb, insertCategory, insertExpense } from './utils';
 
 export const test = base.extend<{ apiHeaders: Record<string, string> }>({
   apiHeaders: async ({ request }, use) => {
-    const issuer = `${process.env.TEST_OIDC_URL ?? 'http://localhost:8060'}/default`;
+    const issuer = 'http://localhost:8060/default';
     const redirect = 'http://localhost/test';
     const authorization = await request.get(`${issuer}/authorize`, {
-      // Keep token issuer claims aligned with the API's in-pod issuer even
-      // when the host port used to reach the mock is remapped.
-      headers: { Host: 'localhost:8060' },
       params: { client_id: 'test-client', redirect_uri: redirect, response_type: 'code' },
       maxRedirects: 0,
     });
     const code = new URL(authorization.headers()['location']).searchParams.get('code')!;
     const tokens = await request.post(`${issuer}/token`, {
-      headers: { Host: 'localhost:8060' },
       form: { grant_type: 'authorization_code', client_id: 'test-client', redirect_uri: redirect, code },
     });
     if (!tokens.ok()) throw new Error(`Mock token request failed: ${tokens.status()}`);

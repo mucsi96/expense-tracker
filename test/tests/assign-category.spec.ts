@@ -133,7 +133,13 @@ test('shows the category description as a tooltip on hover', async ({
   await expect(chip).toHaveAccessibleDescription('Migros, Coop, Aldi, Lidl');
   await chip.hover();
 
-  await expect(page.getByRole('tooltip')).toHaveText('Migros, Coop, Aldi, Lidl');
+  // The description also exists as a hidden aria-describedby message, so
+  // scope to the overlay to assert the tooltip itself is shown.
+  await expect(
+    page
+      .locator('.cdk-overlay-container')
+      .getByText('Migros, Coop, Aldi, Lidl')
+  ).toBeVisible();
 });
 
 test('shows the category emoji and description in the picker', async ({

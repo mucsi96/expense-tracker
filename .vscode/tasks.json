@@ -49,7 +49,34 @@
         "cwd": "${workspaceFolder}/client"
       },
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": {
+        "pattern": [
+          {
+            "regexp": "^X \\[(ERROR)\\] ((TS|NG)\\d+): (.*)$",
+            "severity": 1,
+            "code": 2,
+            "message": 4
+          },
+          {
+            "regexp": ""
+          },
+          {
+            "regexp": "^\\s*(.*):(\\d+):(\\d+):$",
+            "file": 1,
+            "line": 2,
+            "column": 3
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": {
+            "regexp": "Changes detected\\. Rebuilding\\.\\.\\."
+          },
+          "endsPattern": {
+            "regexp": "Application bundle generation (complete|failed)"
+          }
+        }
+      }
     },
     {
       "type": "shell",

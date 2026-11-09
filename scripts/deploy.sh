@@ -33,19 +33,27 @@ CLIENT_ORIGIN=$(jq -er '.hostname | select(test("^[a-z0-9.-]+\\.web\\.core\\.win
 echo "Updating Helm repositories..."
 helm repo add mucsi96 https://mucsi96.github.io/k8s-helm-charts --force-update
 
-serverChartVersion=7.0.0
+springAppChartVersion=37.0.0
 staticClientAppChartVersion=5.0.0
 
 helm status "$AUTH_RELEASE" --namespace expense-tracker >/dev/null
-helm show chart mucsi96/rust-app --version "$serverChartVersion" >/dev/null
+helm show chart mucsi96/spring-app --version "$springAppChartVersion" >/dev/null
 helm show chart mucsi96/static-client-app --version "$staticClientAppChartVersion" >/dev/null
 
-echo "Deploying server: $SERVER_IMAGE using rust-app chart $serverChartVersion"
+echo "Deploying server: $SERVER_IMAGE using spring-app chart $springAppChartVersion"
 
-helm upgrade $SERVER_RELEASE_NAME mucsi96/rust-app \
+# The 2026-11-06 p07 audit measured a 179Mi median working set over 77h.
+# Reserve 224Mi (25% above that baseline), including active file-backed pages;
+# RSS alone (112Mi p95) understates the normal working set.
+#
+# The limit is the opposite question: it has to cover the idle footprint plus
+# the 256Mi heap the image is capped at (see the ENTRYPOINT in
+# server/Dockerfile - keep the two in step).
+
+helm upgrade $SERVER_RELEASE_NAME mucsi96/spring-app \
     --install \
     --reset-values \
-    --version $serverChartVersion \
+    --version $springAppChartVersion \
     --set-string image="$SERVER_IMAGE" \
     --set host=$HOSTNAME \
     --set basePath=/api \
@@ -53,7 +61,6 @@ helm upgrade $SERVER_RELEASE_NAME mucsi96/rust-app \
     --set clientId=$API_CLIENT_ID \
     --set serviceAccountName=expense-tracker-api-workload-identity \
     --set env.AZURE_KEYVAULT_ENDPOINT=$AZURE_KEYVAULT_ENDPOINT \
-    --set env.LOCO_ENV=production \
     --set resources.requests.memory=224Mi \
     --set resources.requests.cpu=100m \
     --set resources.limits.memory=384Mi \
